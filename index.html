@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<title>Železo</title>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#16181B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Železo">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --iron:#16181B; --panel:#1E2226; --panel2:#252A2F; --line:#31373D;
+  --chalk:#E9E7E1; --muted:#868D95; --dim:#5C636B;
+  --p25:#CE2E2E; --p20:#2158CC; --p15:#E5B72A; --p10:#1E8A4C; --p5:#E9E7E1;
+  --disp:'Oswald',system-ui,sans-serif;
+  --body:'IBM Plex Sans',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --top:env(safe-area-inset-top,0px);
+  --bot:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overscroll-behavior:none}
+body{
+  background:var(--iron);color:var(--chalk);font-family:var(--body);
+  -webkit-font-smoothing:antialiased;
+  display:flex;flex-direction:column;
+  max-width:520px;margin:0 auto;position:relative;overflow:hidden;
+}
+button,input,select{font:inherit;color:inherit}
+button{background:none;border:none;cursor:pointer}
+
+/* ---------- views ---------- */
+.view{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;padding-top:var(--top);padding-bottom:28px}
+.view.on{display:block;animation:fade .2s ease}
+@keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+
+.hd{padding:16px 18px 12px;display:flex;align-items:flex-end;gap:10px}
+.hd .grow{flex:1;min-width:0}
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
+h1{font-family:var(--disp);font-weight:600;font-size:29px;letter-spacing:.01em;text-transform:uppercase;margin-top:3px;line-height:1.1}
+h2{font-family:var(--disp);font-weight:600;font-size:21px;text-transform:uppercase;letter-spacing:.03em}
+h3{font-family:var(--disp);font-weight:500;font-size:17px;text-transform:uppercase;letter-spacing:.04em}
+.sec{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;padding:0 18px;margin:22px 0 9px}
+.muted{color:var(--muted);font-size:13px}
+.data{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+
+.card{margin:0 12px 12px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;position:relative;overflow:hidden;display:block;width:calc(100% - 24px);text-align:left;color:inherit}
+.card .stripe{position:absolute;left:0;top:0;bottom:0;width:3px}
+
+.btn{display:block;width:100%;text-align:center;background:var(--chalk);color:#16181B;font-family:var(--disp);font-size:15px;letter-spacing:.09em;text-transform:uppercase;font-weight:600;padding:14px;border-radius:11px}
+.btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+.btn.danger{background:transparent;color:#E06B6B;border:1px solid #7A2A2A}
+.btn:active{transform:scale(.985)}
+.pad{padding:0 12px}
+.gap{margin-top:9px}
+
+.chips{display:flex;gap:7px;overflow-x:auto;padding:0 18px 4px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{white-space:nowrap;padding:7px 13px;border-radius:20px;border:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+.chip.on{background:var(--chalk);color:#16181B;border-color:var(--chalk);font-weight:600}
+.wrapchips{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px}
+
+.icon{width:1em;height:1em;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;display:block}
+
+/* ---------- kalendář ---------- */
+.calwrap{margin:0 12px;background:var(--panel);border-radius:14px;padding:14px 10px 12px;border:1px solid var(--line)}
+.calnav{display:flex;align-items:center;justify-content:space-between;padding:0 4px 12px;gap:8px}
+.calnav .m{font-family:var(--disp);font-weight:500;font-size:16px;letter-spacing:.06em;text-transform:uppercase;flex:1;text-align:center}
+.calnav button{color:var(--muted);padding:4px 8px;font-size:20px;line-height:1}
+.todaybtn{font-family:var(--mono)!important;font-size:10px!important;letter-spacing:.12em;text-transform:uppercase;border:1px solid var(--line);border-radius:7px;padding:5px 8px!important}
+.dow{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px}
+.dow span{text-align:center;font-family:var(--mono);font-size:10px;color:var(--dim)}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:50px;gap:2px}
+.day{border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-family:var(--mono);font-size:13.5px;color:var(--muted);position:relative;padding-top:2px}
+.day.empty{visibility:hidden}
+.day .dot{width:6px;height:6px;border-radius:50%}
+.day .dot.plan{background:transparent!important;box-shadow:inset 0 0 0 1.5px currentColor}
+.day.today{color:var(--chalk)}
+.day.today::after{content:'';position:absolute;inset:2px;border-radius:8px;border:1px dashed var(--line)}
+.day.sel{background:var(--panel2);color:var(--chalk)}
+.day.sel::after{border-color:var(--chalk)}
+
+.exline{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
+.exline:last-child{border-bottom:none}
+
+.stats{display:flex;align-items:center}
+.stats>div{flex:1}
+.stats .sep{flex:0 0 1px;align-self:stretch;background:var(--line);margin:0 14px}
+.big{font-family:var(--disp);font-size:34px;font-weight:600;line-height:1.05}
+.big small{font-size:14px;color:var(--muted);font-family:var(--body);margin-left:3px}
+
+/* ---------- řádky ---------- */
+.row{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid #232830;width:100%;text-align:left}
+.row .tag{width:3px;height:26px;border-radius:2px;flex:none}
+.row .n{flex:1;font-size:14.5px;min-width:0}
+.badge{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--iron);background:var(--p15);padding:2px 5px;border-radius:3px;text-transform:uppercase}
+
+.planrow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);width:100%;text-align:left}
+.planrow:last-child{border-bottom:none}
+.planrow .d{font-family:var(--mono);font-size:12px;color:var(--dim);width:24px}
+.planrow .dot{width:8px;height:8px;border-radius:50%;flex:none}
+
+.stepper{display:flex;align-items:center;margin-top:11px;gap:8px}
+.stepper .lbl{flex:1;color:var(--muted);font-size:13px}
+.stepper button{width:32px;height:32px;border:1px solid var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:16px}
+.stepper .val{font-family:var(--mono);font-size:14px;min-width:60px;text-align:center}
+
+.field{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;color:var(--chalk);font-size:15px;font-family:var(--body)}
+.field::placeholder{color:var(--dim)}
+.field:focus{outline:none;border-color:var(--chalk)}
+.form{margin:10px 12px 0;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:15px;display:none}
+.form.on{display:block}
+.form label{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;margin:12px 0 6px}
+.form label:first-child{margin-top:0}
+
+.swatches{display:flex;gap:9px;margin-top:14px}
+.swatch{width:30px;height:30px;border-radius:50%}
+.swatch.on{box-shadow:0 0 0 2px var(--chalk)}
+
+/* ---------- progres ---------- */
+.delta{font-family:var(--mono);font-size:12px;color:var(--p10);margin-left:8px}
+.delta.flat{color:var(--p15)}
+.bars{display:flex;align-items:flex-end;gap:5px;height:74px;margin-top:4px}
+.bars div{flex:1;background:var(--panel2);border-radius:3px 3px 0 0;min-height:5px}
+.bars div.hi{background:var(--chalk)}
+.mrow{margin-top:13px}
+.mrow .t{display:flex;justify-content:space-between;gap:8px;font-size:13px;margin-bottom:5px}
+.track{height:7px;background:var(--panel2);border-radius:4px;position:relative;overflow:hidden}
+.track i{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+.track u{position:absolute;top:0;bottom:0;width:1px;background:var(--dim)}
+.pr{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--line)}
+.pr:last-child{border-bottom:none}
+.pr .w{font-family:var(--mono);font-weight:600;font-size:16px;min-width:78px}
+.pr .nm{flex:1;font-size:13.5px;min-width:0}
+.axis{font-family:var(--mono);font-size:10px;color:var(--dim)}
+
+.empty{padding:34px 24px;text-align:center}
+.empty p{color:var(--muted);font-size:13px;margin-top:8px;line-height:1.55}
+
+/* ---------- tab bar ---------- */
+.tabs{display:flex;background:#121417;border-top:1px solid var(--line);padding:8px 0 calc(8px + var(--bot));flex:none}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--dim);font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase}
+.tab .icon{width:21px;height:21px}
+.tab.on{color:var(--chalk)}
+
+/* ---------- překryvné vrstvy ---------- */
+.sheetview{position:fixed;inset:0;max-width:520px;margin:0 auto;background:var(--iron);z-index:20;display:none;flex-direction:column}
+.sheetview.on{display:flex;animation:up .26s cubic-bezier(.2,.8,.3,1)}
+.shead{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);flex:none;padding-top:calc(14px + var(--top))}
+.shead .stripe{width:3px;height:32px;border-radius:2px;flex:none}
+.shead .ttl{flex:1;min-width:0}
+.shead .clock{font-family:var(--mono);font-size:15px;color:var(--muted)}
+.sbody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(90px + var(--bot))}
+
+/* trénink */
+.exblk{border-bottom:8px solid #121417;padding-bottom:12px}
+.exhd{display:flex;align-items:center;gap:10px;padding:15px 18px 8px}
+.exhd h3{flex:1;min-width:0}
+.iconbtn{width:34px;height:34px;border:1px solid var(--line);border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex:none}
+.iconbtn .icon{width:18px;height:18px}
+.hint{display:flex;gap:8px;align-items:center;margin:0 18px 10px;padding:10px;border-radius:9px;background:rgba(30,138,76,.11);border:1px solid rgba(30,138,76,.4);font-size:12.5px;color:#7BD3A0;line-height:1.4}
+.hint .icon{width:16px;height:16px;flex:none}
+.sgrid{padding:0 18px}
+.shd,.srow{display:grid;grid-template-columns:22px 1fr 64px 58px 36px;gap:8px;align-items:center}
+.shd{border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:2px;color:var(--dim);font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase}
+.shd .ic{display:flex;justify-content:center}
+.shd .ic .icon{width:16px;height:16px}
+.srow{padding:5px 0}
+.srow .idx{font-family:var(--mono);font-size:13px;color:var(--dim);text-align:center}
+.srow .last{font-family:var(--mono);font-size:12px;color:var(--dim);overflow:hidden;white-space:nowrap}
+.srow input{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 0;text-align:center;color:var(--chalk);font-family:var(--mono);font-size:14.5px}
+.srow input:focus{outline:none;border-color:var(--chalk)}
+.srow.done input{background:transparent;border-color:transparent;color:var(--muted)}
+.tick{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:transparent}
+.tick .icon{width:18px;height:18px}
+.srow.done .tick{background:var(--p10);border-color:var(--p10);color:#fff}
+
+/* rest bar */
+.rest{position:absolute;left:12px;right:12px;bottom:calc(14px + var(--bot));background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:12px;display:none;align-items:center;gap:12px;z-index:22;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.rest.on{display:flex}
+.rest .lbl{flex:1}
+.rest .lbl b{font-family:var(--disp);font-size:19px;letter-spacing:.04em;display:block;font-weight:600}
+.rest button{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;border:1px solid var(--line);padding:8px 10px;border-radius:8px}
+
+/* modal */
+.modal{position:fixed;inset:0;max-width:520px;margin:0 auto;background:rgba(8,9,10,.82);z-index:30;display:none;align-items:flex-end;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.modal.on{display:flex}
+.sheet{width:100%;background:var(--panel);border-radius:20px 20px 0 0;padding:20px 18px calc(26px + var(--bot));border-top:1px solid var(--line);animation:up .26s cubic-bezier(.2,.8,.3,1);max-height:88vh;overflow-y:auto}
+.bar{display:flex;align-items:center;justify-content:center;height:104px;margin:8px 0 16px}
+.sleeve{height:9px;background:linear-gradient(#9BA3AB,#5E666E);width:56px;border-radius:2px}
+.collar{width:9px;height:26px;background:#79818A;border-radius:2px;margin-left:3px}
+.plate{border-radius:3px;margin:0 1.5px}
+.total{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--line);padding-top:13px;gap:10px}
+.total b{font-family:var(--disp);font-size:27px;font-weight:600}
+.steps{display:flex;gap:8px;margin-top:14px}
+.steps button{flex:1;border:1px solid var(--line);border-radius:9px;padding:12px;font-family:var(--mono);font-size:13.5px}
+
+/* sdílecí karta */
+.share{position:fixed;inset:0;max-width:520px;margin:0 auto;background:rgba(8,9,10,.94);z-index:40;display:none;flex-direction:column;justify-content:center;padding:16px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.share.on{display:flex}
+.share canvas{width:100%;height:auto;border-radius:18px;display:block;box-shadow:0 20px 50px rgba(0,0,0,.6);animation:up .28s cubic-bezier(.2,.8,.3,1)}
+.share .acts{display:flex;gap:9px;margin-top:16px}
+.share .acts .btn{flex:1}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + var(--bot));background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:11px 16px;font-size:13px;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- ========== KALENDÁŘ ========== -->
+<div class="view on" id="v-cal">
+  <div class="hd">
+    <div class="grow"><div class="eyebrow" id="todaystr"></div><h1>Kalendář</h1></div>
+    <button class="iconbtn" onclick="openSettings()" aria-label="Nastavení">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+  </div>
+
+  <div class="calwrap">
+    <div class="calnav">
+      <button onclick="shiftMonth(-1)" aria-label="Předchozí měsíc">‹</button>
+      <div class="m" id="monthlbl"></div>
+      <button class="todaybtn" id="todaybtn" onclick="jumpToday()">Dnes</button>
+      <button onclick="shiftMonth(1)" aria-label="Další měsíc">›</button>
+    </div>
+    <div class="dow"><span>Po</span><span>Út</span><span>St</span><span>Čt</span><span>Pá</span><span>So</span><span>Ne</span></div>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <div id="daycard" style="margin-top:14px"></div>
+
+  <div class="sec">Posledních 7 dní</div>
+  <div class="card" id="weekstats"></div>
+</div>
+
+<!-- ========== RUTINY ========== -->
+<div class="view" id="v-rut">
+  <div class="hd"><div class="grow"><div class="eyebrow" id="rutcount"></div><h1>Rutiny</h1></div></div>
+  <div id="rutlist"></div>
+  <div class="pad"><button class="btn ghost" onclick="newRoutine()">+ Nová rutina</button></div>
+  <div class="sec">Týdenní rozvrh</div>
+  <div class="card">
+    <div class="muted" style="margin-bottom:6px">Kalendář podle toho předvyplní tréninky dopředu.</div>
+    <div id="planlist"></div>
+  </div>
+  <div class="sec">Šablony k převzetí</div>
+  <div id="tpl"></div>
+</div>
+
+<!-- ========== CVIKY ========== -->
+<div class="view" id="v-ex">
+  <div class="hd"><div class="grow"><div class="eyebrow" id="excount"></div><h1>Cviky</h1></div></div>
+  <div style="padding:0 16px 10px"><input class="field" id="exsearch" placeholder="Hledat cvik" oninput="renderExercises()"></div>
+  <div class="chips" id="exchips"></div>
+  <div class="pad" style="padding-top:14px"><button class="btn ghost" id="exformbtn" onclick="toggleExForm()">+ Vytvořit vlastní cvik</button></div>
+  <div class="form" id="exform">
+    <label>Název cviku</label>
+    <input class="field" id="f-name" placeholder="např. Tlak na šikmé lavici">
+    <label>Svalová partie</label>
+    <div class="wrapchips" id="f-muscle"></div>
+    <label>Co se měří</label>
+    <div class="wrapchips" id="f-kind"></div>
+    <button class="btn" style="margin-top:16px" onclick="addExercise()">Uložit cvik</button>
+  </div>
+  <div id="exlist" style="margin-top:14px"></div>
+  <div class="muted" style="text-align:center;margin-top:16px;font-size:12px">Vlastní cvik smažeš podržením prstu.</div>
+</div>
+
+<!-- ========== PROGRES ========== -->
+<div class="view" id="v-prog">
+  <div class="hd"><div class="grow"><div class="eyebrow">Posledních 8 týdnů</div><h1>Progres</h1></div></div>
+  <div id="progbody"></div>
+</div>
+
+<!-- ========== TAB BAR ========== -->
+<nav class="tabs">
+  <button class="tab on" data-v="cal"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Kalendář</button>
+  <button class="tab" data-v="rut"><svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg>Rutiny</button>
+  <button class="tab" data-v="ex"><svg class="icon" viewBox="0 0 24 24"><path d="M6 8v8M18 8v8M3 10v4M21 10v4M6 12h12"/></svg>Cviky</button>
+  <button class="tab" data-v="prog"><svg class="icon" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l4-5 3 3 5-7"/></svg>Progres</button>
+</nav>
+
+<!-- ========== TRÉNINK ========== -->
+<div class="sheetview" id="workout">
+  <div class="shead">
+    <div class="stripe" id="w-stripe"></div>
+    <h2 class="ttl" id="w-title">Trénink</h2>
+    <div class="clock" id="w-clock">00:00</div>
+    <button onclick="quitWorkout()" style="color:var(--muted);padding-left:4px" aria-label="Zavřít">
+      <svg class="icon" style="width:22px;height:22px" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="sbody" id="w-body"></div>
+  <div class="rest" id="rest">
+    <svg width="38" height="38" viewBox="0 0 38 38" style="flex:none">
+      <circle cx="19" cy="19" r="16" fill="none" stroke="#31373D" stroke-width="3"/>
+      <circle cx="19" cy="19" r="16" fill="none" stroke="#E9E7E1" stroke-width="3" stroke-linecap="round"
+        stroke-dasharray="100.5" stroke-dashoffset="0" id="ringfill" transform="rotate(-90 19 19)"/>
+    </svg>
+    <div class="lbl"><b id="restnum">0:00</b><span class="eyebrow">Pauza</span></div>
+    <button onclick="addRest(30)">+30 s</button>
+    <button onclick="skipRest()">Přeskočit</button>
+  </div>
+</div>
+
+<!-- ========== EDITOR RUTINY / VÝBĚR ========== -->
+<div class="sheetview" id="push">
+  <div class="shead">
+    <button onclick="closePush()" style="color:var(--muted)" aria-label="Zpět">
+      <svg class="icon" style="width:22px;height:22px" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <h2 class="ttl" id="push-title"></h2>
+  </div>
+  <div class="sbody" id="push-body"></div>
+</div>
+
+<!-- ========== MODAL ========== -->
+<div class="modal" id="modal" onclick="if(event.target.id==='modal')closeModal()">
+  <div class="sheet" id="modal-body"></div>
+</div>
+
+<!-- ========== SDÍLECÍ KARTA ========== -->
+<div class="share" id="share">
+  <canvas id="cardcanvas" width="1080" height="1350"></canvas>
+  <div class="acts">
+    <button class="btn ghost" onclick="closeShare()">Zavřít</button>
+    <button class="btn" id="sharebtn" onclick="doShare()">Sdílet</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+/* ================================================================
+   ÚLOŽIŠTĚ
+   Data leží v localStorage jako jeden JSON. Když prohlížeč úložiště
+   nepovolí (např. náhled v iframu), spadne to do paměti, aby appka
+   pořád fungovala – jen se po zavření nic neuloží.
+   ================================================================ */
+const KEY = 'zelezo.db.v1';
+let memFallback = null;
+const Store = {
+  read(){
+    if (memFallback) return memFallback;
+    try { const r = localStorage.getItem(KEY); return r ? JSON.parse(r) : null; }
+    catch(e){ return null; }
+  },
+  write(d){
+    try { localStorage.setItem(KEY, JSON.stringify(d)); memFallback = null; }
+    catch(e){ memFallback = d; }
+  },
+  persistent(){ try { localStorage.setItem('__t','1'); localStorage.removeItem('__t'); return true; } catch(e){ return false; } }
+};
+
+/* ================================================================
+   VÝCHOZÍ DATA
+   ================================================================ */
+const EXERCISES = [
+  ['Bench press','Prsa','weight'],['Bench press na šikmé lavici','Prsa','weight'],
+  ['Tlak s jednoručkami vleže','Prsa','weight'],['Rozpažky s jednoručkami','Prsa','weight'],
+  ['Peck deck','Prsa','weight'],['Kliky na bradlech','Prsa','body'],['Kliky','Prsa','body'],
+  ['Mrtvý tah','Záda','weight'],['Shyby nadhmatem','Záda','body'],['Shyby podhmatem','Záda','body'],
+  ['Přítahy v předklonu','Záda','weight'],['Přítahy jednoruček v předklonu','Záda','weight'],
+  ['Stahování horní kladky','Záda','weight'],['Veslování na kladce','Záda','weight'],['Shrugy','Záda','weight'],
+  ['Dřep s činkou','Nohy','weight'],['Přední dřep','Nohy','weight'],['Leg press','Nohy','weight'],
+  ['Rumunský mrtvý tah','Nohy','weight'],['Bulharský dřep','Nohy','weight'],['Výpady s jednoručkami','Nohy','weight'],
+  ['Předkopávání','Nohy','weight'],['Zakopávání','Nohy','weight'],['Výpony na lýtka','Nohy','weight'],
+  ['Tlak nad hlavu','Ramena','weight'],['Tlak s jednoručkami nad hlavu','Ramena','weight'],
+  ['Upažování s jednoručkami','Ramena','weight'],['Face pull','Ramena','weight'],['Rozpažování v předklonu','Ramena','weight'],
+  ['Bicepsový zdvih s velkou činkou','Biceps','weight'],['Kladivový zdvih','Biceps','weight'],['Zdvih na Scottově lavici','Biceps','weight'],
+  ['Tricepsové stahování kladky','Triceps','weight'],['Francouzský tlak','Triceps','weight'],['Kliky na lavici','Triceps','body'],
+  ['Prkno','Břicho','time'],['Zvedání nohou ve visu','Břicho','body'],['Kolečko na břicho','Břicho','body']
+];
+
+const TEMPLATES = [
+  {name:'Push',color:'#CE2E2E',desc:'Prsa, ramena, triceps',ex:[
+    ['Bench press',4,6,8,180],['Tlak nad hlavu',3,8,10,150],['Bench press na šikmé lavici',3,8,12,120],
+    ['Rozpažky s jednoručkami',3,12,15,90],['Tricepsové stahování kladky',3,12,15,90]]},
+  {name:'Pull',color:'#2158CC',desc:'Záda, biceps',ex:[
+    ['Mrtvý tah',3,5,5,240],['Shyby nadhmatem',4,6,10,180],['Přítahy v předklonu',3,8,10,150],
+    ['Veslování na kladce',3,10,12,120],['Bicepsový zdvih s velkou činkou',3,10,12,90]]},
+  {name:'Nohy',color:'#1E8A4C',desc:'Kvadricepsy, hamstringy, lýtka',ex:[
+    ['Dřep s činkou',4,5,5,240],['Rumunský mrtvý tah',3,8,10,150],['Leg press',3,10,12,150],
+    ['Zakopávání',3,12,15,90],['Výpony na lýtka',4,12,15,60]]},
+  {name:'Upper',color:'#E5B72A',desc:'Celé horní tělo',ex:[
+    ['Bench press',4,6,8,180],['Přítahy v předklonu',4,6,8,180],['Tlak s jednoručkami nad hlavu',3,8,12,120],
+    ['Stahování horní kladky',3,8,12,120],['Bicepsový zdvih s velkou činkou',3,10,12,90],['Tricepsové stahování kladky',3,10,12,90]]},
+  {name:'Lower',color:'#8B5CF6',desc:'Celé dolní tělo',ex:[
+    ['Dřep s činkou',4,5,6,240],['Rumunský mrtvý tah',3,8,10,150],['Bulharský dřep',3,10,12,120],
+    ['Předkopávání',3,12,15,90],['Výpony na lýtka',4,12,15,60],['Prkno',3,45,60,60]]},
+  {name:'Full body',color:'#EC6F2A',desc:'Pro start, 3× týdně',ex:[
+    ['Dřep s činkou',3,5,5,180],['Bench press',3,5,5,180],['Přítahy v předklonu',3,5,5,180],
+    ['Tlak nad hlavu',3,8,10,120],['Prkno',3,30,45,60]]}
+];
+
+const MUSCLE_COLOR = {Prsa:'#CE2E2E','Záda':'#2158CC',Nohy:'#1E8A4C',Ramena:'#E5B72A',
+  Biceps:'#8B5CF6',Triceps:'#EC6F2A','Břicho':'#3AA8A8','Předloktí':'#6E8FA8',Krk:'#D9536F'};
+const mcol = m => MUSCLE_COLOR[m] || '#6B7280';
+const ROUTINE_COLORS = ['#CE2E2E','#2158CC','#1E8A4C','#E5B72A','#8B5CF6','#EC6F2A','#3AA8A8'];
+const KINDS = {weight:'Váha × opakování', body:'Vlastní váha', time:'Čas (výdrž)'};
+const TARGET = {Prsa:[10,20],'Záda':[10,20],Nohy:[10,20],Ramena:[10,24],Biceps:[8,16],Triceps:[8,16],
+  'Břicho':[8,18],'Předloktí':[4,12],Krk:[4,10]};
+
+/* ================================================================
+   DATABÁZE
+   ================================================================ */
+let D;
+const uid = () => ++D.seq;
+const save = () => Store.write(D);
+
+function initDB(){
+  D = Store.read();
+  if (D && D.version === 1) return;
+  D = {version:1, seq:0, exercises:[], routines:[], weeklyPlan:{}, overrides:{}, sessions:[]};
+  EXERCISES.forEach(([name,muscle,kind]) => D.exercises.push({id:uid(),name,muscle,kind,custom:false}));
+  TEMPLATES.slice(0,3).forEach(t => addTemplate(t, true));
+  const ids = D.routines.map(r => r.id);
+  [1,3,5].forEach((dow,i) => { if (ids[i]) D.weeklyPlan[dow] = ids[i]; });
+  save();
+}
+
+function addTemplate(tpl, quiet){
+  const r = {id:uid(), name:tpl.name, color:tpl.color, exercises:[]};
+  tpl.ex.forEach(([name,sets,lo,hi,rest]) => {
+    const ex = D.exercises.find(e => e.name === name);
+    if (ex) r.exercises.push({id:uid(), exerciseId:ex.id, sets, repLow:lo, repHigh:hi, rest});
+  });
+  D.routines.push(r);
+  if (!quiet){ save(); renderRoutines(); toast('Rutina „' + tpl.name + '" přidána'); }
+  return r.id;
+}
+
+const exById = id => D.exercises.find(e => e.id === id);
+const routineById = id => D.routines.find(r => r.id === id);
+const muscles = () => [...new Set(D.exercises.map(e => e.muscle))].sort();
+
+/** Co je naplánováno na daný den: výjimka má přednost před týdenním rozvrhem. */
+function plannedFor(k){
+  if (k in D.overrides) return D.overrides[k] ? routineById(D.overrides[k]) : null;
+  const dow = fromKey(k).getDay();
+  return D.weeklyPlan[dow] ? routineById(D.weeklyPlan[dow]) : null;
+}
+const sessionFor = k => D.sessions.find(s => s.date === k && s.finished);
+const openSessionFor = k => D.sessions.find(s => s.date === k && !s.finished);
+
+/** Poslední odcvičené série cviku – zdroj šedých hodnot „minule". */
+function lastPerformance(exerciseId, exceptId){
+  const done = D.sessions
+    .filter(s => s.finished && s.id !== exceptId && s.logs.some(l => l.exerciseId === exerciseId))
+    .sort((a,b) => a.date < b.date ? 1 : -1);
+  if (!done.length) return null;
+  const s = done[0];
+  const sets = s.logs.filter(l => l.exerciseId === exerciseId).sort((a,b) => a.setIndex - b.setIndex);
+  const top = sets.reduce((a,b) => b.weight > a.weight ? b : a, sets[0]);
+  return {date:s.date, sets, top};
+}
+
+/* ================================================================
+   POMOCNÉ FUNKCE
+   ================================================================ */
+const MON = ['Leden','Únor','Březen','Duben','Květen','Červen','Červenec','Srpen','Září','Říjen','Listopad','Prosinec'];
+const MON_GEN = ['ledna','února','března','dubna','května','června','července','srpna','září','října','listopadu','prosince'];
+const DOW = ['neděle','pondělí','úterý','středa','čtvrtek','pátek','sobota'];
+const DOW_SHORT = ['Po','Út','St','Čt','Pá','So','Ne'];
+
+const today = () => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); };
+const key = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+const fromKey = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const addDays = (d,n) => new Date(d.getFullYear(), d.getMonth(), d.getDate()+n);
+const dowMonday = d => (d.getDay()+6) % 7;
+const mmss = s => Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+const clock = s => String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+const num = (n,dec=1) => { const r = Math.round(n * 10**dec) / 10**dec; return String(r).replace('.', ','); };
+const e1rm = (w,r) => r <= 1 ? w : w * (1 + r/30);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function dateLabel(d){
+  const t = today(), diff = Math.round((d - t) / 864e5);
+  if (diff === 0) return 'Dnes · ' + d.getDate() + '. ' + MON_GEN[d.getMonth()];
+  if (diff === 1) return 'Zítra · ' + d.getDate() + '. ' + MON_GEN[d.getMonth()];
+  if (diff === -1) return 'Včera · ' + d.getDate() + '. ' + MON_GEN[d.getMonth()];
+  const w = DOW[d.getDay()];
+  return w[0].toUpperCase() + w.slice(1) + ' ' + d.getDate() + '. ' + MON_GEN[d.getMonth()];
+}
+const shortDate = k => { const d = fromKey(k); return d.getDate() + '. ' + MON_GEN[d.getMonth()].slice(0,3); };
+
+const STACK = [[25,'#CE2E2E',86],[20,'#2158CC',82],[15,'#E5B72A',76],[10,'#1E8A4C',66],
+               [5,'#E9E7E1',54],[2.5,'#9BA3AB',44],[1.25,'#79818A',36]];
+function plates(total, bar=20){
+  let side = Math.max(0, (total - bar) / 2), list = [];
+  STACK.forEach(([kg,color,h]) => { while (side >= kg - .001){ list.push({kg,color,h}); side -= kg; } });
+  return {list, rest: Math.round(side*100)/100, side: (total-bar)/2};
+}
+
+/** Když jsi minule dal všechny série na horní hranici, je čas přidat. */
+function overloadHint(sets, targetSets, repHigh, weight){
+  if (!sets || sets.length < targetSets) return null;
+  if (!sets.every(s => s.reps >= repHigh)) return null;
+  const step = weight >= 60 ? 2.5 : 1.25;
+  return {next: weight + step, text:'Minule jsi dal všechny série na ' + repHigh + '. Zkus ' + num(weight+step) + ' kg.'};
+}
+
+let toastT;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('on');
+  clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('on'), 2200);
+}
+function haptic(ms=12){ if (navigator.vibrate) navigator.vibrate(ms); }
+
+/* ================================================================
+   STATISTIKY
+   ================================================================ */
+const weekOf = dateStr => { const d = fromKey(dateStr); return key(addDays(d, -dowMonday(d))); };
+
+function e1rmSeries(exerciseId, weeks=8){
+  const from = key(addDays(today(), -7*weeks)), byWeek = {};
+  D.sessions.filter(s => s.finished && s.date >= from).forEach(s => {
+    s.logs.filter(l => l.exerciseId === exerciseId).forEach(l => {
+      const w = weekOf(s.date), v = e1rm(l.weight, l.reps);
+      if (!byWeek[w] || v > byWeek[w]) byWeek[w] = v;
+    });
+  });
+  return Object.keys(byWeek).sort().map(k => ({week:k, value: Math.round(byWeek[k]*10)/10}));
+}
+
+function weeklyVolume(weeks=8){
+  const from = key(addDays(today(), -7*weeks)), byWeek = {};
+  D.sessions.filter(s => s.finished && s.date >= from).forEach(s => {
+    const w = weekOf(s.date);
+    byWeek[w] = (byWeek[w] || 0) + s.logs.reduce((a,l) => a + l.weight * l.reps, 0);
+  });
+  return Object.keys(byWeek).sort().map(k => ({week:k, value:byWeek[k]}));
+}
+
+function setsPerMuscle(days=7){
+  const from = key(addDays(today(), -days)), m = {};
+  D.sessions.filter(s => s.finished && s.date >= from).forEach(s => {
+    s.logs.forEach(l => { const e = exById(l.exerciseId); if (e) m[e.muscle] = (m[e.muscle]||0) + 1; });
+  });
+  return Object.keys(m).map(k => ({muscle:k, sets:m[k]})).sort((a,b) => b.sets - a.sets);
+}
+
+function personalRecords(limit=20){
+  const best = {};
+  D.sessions.filter(s => s.finished).forEach(s => {
+    s.logs.forEach(l => {
+      if (l.weight <= 0) return;
+      if (!best[l.exerciseId] || l.weight > best[l.exerciseId].w)
+        best[l.exerciseId] = {id:l.exerciseId, w:l.weight, date:s.date};
+    });
+  });
+  return Object.values(best).map(b => ({...b, name: exById(b.id) ? exById(b.id).name : '?'}))
+    .sort((a,b) => b.w - a.w).slice(0, limit);
+}
+
+function stagnating(){
+  const out = [], seen = new Set();
+  D.sessions.filter(s => s.finished).forEach(s => s.logs.forEach(l => seen.add(l.exerciseId)));
+  seen.forEach(id => {
+    const s = e1rmSeries(id, 6);
+    if (s.length < 3) return;
+    const r = s.slice(-3).map(x => x.value);
+    if (Math.max(...r) - Math.min(...r) < 1){ const e = exById(id); if (e) out.push(e.name); }
+  });
+  return out;
+}
+
+function summarize(session){
+  const volume = session.logs.reduce((a,l) => a + l.weight * l.reps, 0);
+  const perEx = [];
+  session.logs.forEach(l => {
+    let x = perEx.find(p => p.id === l.exerciseId);
+    if (!x){ const e = exById(l.exerciseId); x = {id:l.exerciseId, name: e ? e.name : '?', sets:0, top:0}; perEx.push(x); }
+    x.sets++; x.top = Math.max(x.top, l.weight);
+  });
+  const prs = [];
+  perEx.forEach(x => {
+    let prev = 0;
+    D.sessions.filter(s => s.finished && s.id !== session.id).forEach(s =>
+      s.logs.filter(l => l.exerciseId === x.id).forEach(l => { if (l.weight > prev) prev = l.weight; }));
+    if (x.top > 0 && x.top > prev) prs.push({name:x.name, weight:x.top});
+  });
+  return {sets: session.logs.length, volume, perEx, prs, durationS: session.durationS};
+}
+
+/* ================================================================
+   NAVIGACE
+   ================================================================ */
+function go(v){
+  document.querySelectorAll('.view').forEach(x => x.classList.toggle('on', x.id === 'v-'+v));
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.v === v));
+  if (v === 'cal') renderCalendar();
+  if (v === 'rut') renderRoutines();
+  if (v === 'ex') renderExercises();
+  if (v === 'prog') renderProgress();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => go(t.dataset.v));
+
+/* ================================================================
+   KALENDÁŘ
+   ================================================================ */
+let viewY, viewM, sel;
+
+function renderCalendar(){
+  const T0 = today();
+  document.getElementById('todaystr').textContent =
+    'Dnes je ' + DOW[T0.getDay()] + ' ' + T0.getDate() + '. ' + MON_GEN[T0.getMonth()];
+  document.getElementById('monthlbl').textContent = MON[viewM] + ' ' + viewY;
+  const cur = viewY === T0.getFullYear() && viewM === T0.getMonth();
+  document.getElementById('todaybtn').style.visibility = cur ? 'hidden' : 'visible';
+
+  const g = document.getElementById('grid');
+  g.innerHTML = '';
+  const offset = dowMonday(new Date(viewY, viewM, 1));
+  const len = new Date(viewY, viewM+1, 0).getDate();
+  for (let i = 0; i < offset; i++) g.insertAdjacentHTML('beforeend', '<div class="day empty"></div>');
+  for (let d = 1; d <= len; d++){
+    const dt = new Date(viewY, viewM, d), k = key(dt);
+    const done = sessionFor(k);
+    const r = done ? routineById(done.routineId) : plannedFor(k);
+    const dot = r
+      ? '<div class="dot ' + (done ? '' : 'plan') + '" style="' + (done ? 'background:' : 'color:') + r.color + '"></div>'
+      : '<div class="dot"></div>';
+    g.insertAdjacentHTML('beforeend',
+      '<button class="day ' + (+dt === +T0 ? 'today ' : '') + (k === key(sel) ? 'sel' : '') + '" onclick="pick(' + d + ')">' + d + dot + '</button>');
+  }
+  renderDayCard();
+  renderWeekStats();
+}
+
+function pick(d){ sel = new Date(viewY, viewM, d); renderCalendar(); }
+function shiftMonth(n){
+  viewM += n;
+  if (viewM < 0){ viewM = 11; viewY--; }
+  if (viewM > 11){ viewM = 0; viewY++; }
+  const len = new Date(viewY, viewM+1, 0).getDate();
+  sel = new Date(viewY, viewM, Math.min(sel.getDate(), len));
+  renderCalendar();
+}
+function jumpToday(){ const t = today(); viewY = t.getFullYear(); viewM = t.getMonth(); sel = t; renderCalendar(); }
+
+function renderDayCard(){
+  const k = key(sel), box = document.getElementById('daycard');
+  const done = sessionFor(k);
+  const r = done ? routineById(done.routineId) : plannedFor(k);
+
+  if (!r){
+    box.innerHTML = '<div class="card"><div class="stripe" style="background:var(--line)"></div>' +
+      '<div class="eyebrow">' + dateLabel(sel) + '</div>' +
+      '<h2 style="font-size:24px;margin-top:4px">Volno</h2>' +
+      '<div class="muted">' + (sel < today() ? 'Nic tu není.' : 'Regenerace se počítá.') + '</div>' +
+      '<button class="btn ghost" style="margin-top:14px" onclick="pickRoutineFor(\'' + k + '\')">Naplánovat rutinu</button></div>';
+    return;
+  }
+
+  let body = '';
+  if (done){
+    const s = summarize(done);
+    body = '<div class="stats" style="margin:12px 0 4px">' +
+      '<div><div class="big">' + num(s.volume/1000) + '<small>t</small></div><div class="eyebrow" style="margin-top:4px">Objem</div></div>' +
+      '<div class="sep"></div>' +
+      '<div><div class="big">' + Math.max(1, Math.round(done.durationS/60)) + '<small>min</small></div><div class="eyebrow" style="margin-top:4px">Čas</div></div>' +
+      '<div class="sep"></div>' +
+      '<div><div class="big">' + s.sets + '</div><div class="eyebrow" style="margin-top:4px">Série</div></div></div>' +
+      '<button class="btn ghost" style="margin-top:14px" onclick="shareCard(\'post\',' + done.id + ')">Sdílet výsledek</button>';
+  } else {
+    body = r.exercises.map(re => {
+      const e = exById(re.exerciseId);
+      return '<div class="exline"><span>' + esc(e ? e.name : '?') + '</span><span class="data">' +
+        re.sets + ' × ' + (re.repLow === re.repHigh ? re.repLow : re.repLow + '–' + re.repHigh) + '</span></div>';
+    }).join('') +
+    '<button class="btn" style="margin-top:14px" onclick="startWorkout(' + r.id + ',\'' + k + '\')">Začít trénink</button>' +
+    '<button class="btn ghost gap" onclick="shareCard(\'pre\',' + r.id + ',\'' + k + '\')">Sdílet plán tréninku</button>' +
+    '<button class="btn ghost gap" onclick="pickRoutineFor(\'' + k + '\')">Změnit rutinu</button>';
+  }
+
+  box.innerHTML = '<div class="card"><div class="stripe" style="background:' + r.color + '"></div>' +
+    '<div class="eyebrow">' + dateLabel(sel) + ' · ' + (done ? 'hotovo' : 'plánováno') + '</div>' +
+    '<h2 style="font-size:24px;margin-top:4px">' + esc(r.name) + '</h2>' +
+    '<div class="muted">' + r.exercises.length + ' cviků · ' + r.exercises.reduce((a,e) => a+e.sets, 0) + ' sérií</div>' +
+    body + '</div>';
+}
+
+function renderWeekStats(){
+  const from = key(addDays(today(), -7));
+  const recent = D.sessions.filter(s => s.finished && s.date >= from);
+  const vol = recent.reduce((a,s) => a + s.logs.reduce((x,l) => x + l.weight*l.reps, 0), 0);
+  const sets = recent.reduce((a,s) => a + s.logs.length, 0);
+  document.getElementById('weekstats').innerHTML = '<div class="stats">' +
+    '<div><div class="big">' + recent.length + '</div><div class="eyebrow" style="margin-top:4px">Tréninky</div></div>' +
+    '<div class="sep"></div>' +
+    '<div><div class="big">' + num(vol/1000) + '<small>t</small></div><div class="eyebrow" style="margin-top:4px">Objem</div></div>' +
+    '<div class="sep"></div>' +
+    '<div><div class="big">' + sets + '</div><div class="eyebrow" style="margin-top:4px">Série</div></div></div>';
+}
+
+/* ================================================================
+   RUTINY
+   ================================================================ */
+function renderRoutines(){
+  document.getElementById('rutcount').textContent = D.routines.length + ' rutin';
+  document.getElementById('rutlist').innerHTML = D.routines.length
+    ? D.routines.map(r => {
+        const names = r.exercises.map(re => { const e = exById(re.exerciseId); return e ? e.name : '?'; }).join(' · ');
+        return '<button class="card" onclick="editRoutine(' + r.id + ')"><div class="stripe" style="background:' + r.color + '"></div>' +
+          '<h2 style="font-size:19px">' + esc(r.name) + '</h2>' +
+          '<div class="data" style="margin-top:3px">' + r.exercises.length + ' cviků · ' + r.exercises.reduce((a,e)=>a+e.sets,0) + ' sérií</div>' +
+          '<div class="muted" style="margin-top:9px;line-height:1.5">' + esc(names || 'Zatím prázdná') + '</div></button>';
+      }).join('')
+    : '<div class="empty"><h3>Zatím žádná rutina</h3><p>Vytvoř si vlastní, nebo si vezmi hotovou šablonu níž.</p></div>';
+
+  document.getElementById('planlist').innerHTML = [1,2,3,4,5,6,0].map((dow,i) => {
+    const r = D.weeklyPlan[dow] ? routineById(D.weeklyPlan[dow]) : null;
+    return '<button class="planrow" onclick="pickPlan(' + dow + ')">' +
+      '<span class="d">' + DOW_SHORT[i] + '</span>' +
+      '<span class="dot" style="background:' + (r ? r.color : 'transparent') + '"></span>' +
+      '<span style="flex:1;font-size:14px;color:' + (r ? 'var(--chalk)' : 'var(--dim)') + '">' + (r ? esc(r.name) : 'Volno') + '</span>' +
+      '<svg class="icon" style="width:16px;height:16px;color:var(--dim)" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>';
+  }).join('');
+
+  document.getElementById('tpl').innerHTML = TEMPLATES.map((t,i) =>
+    '<button class="card" onclick="addTemplate(TEMPLATES[' + i + '])"><div class="stripe" style="background:' + t.color + '"></div>' +
+    '<div style="display:flex;align-items:center;gap:10px"><div style="flex:1"><h2 style="font-size:17px">' + t.name + '</h2>' +
+    '<div class="data" style="margin-top:3px">' + t.desc + ' · ' + t.ex.length + ' cviků</div></div>' +
+    '<svg class="icon" style="width:20px;height:20px;color:var(--muted)" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div></button>').join('');
+}
+
+function newRoutine(){
+  const r = {id:uid(), name:'Nová rutina', color:ROUTINE_COLORS[D.routines.length % ROUTINE_COLORS.length], exercises:[]};
+  D.routines.push(r); save(); editRoutine(r.id);
+}
+
+function pickPlan(dow){
+  openModal('<h2 style="font-size:20px">' + DOW_SHORT[[1,2,3,4,5,6,0].indexOf(dow)] + ' — co se cvičí</h2>' +
+    '<div style="margin-top:14px">' +
+    D.routines.map(r => '<button class="row" style="border-radius:10px" onclick="setPlan(' + dow + ',' + r.id + ')">' +
+      '<span class="tag" style="background:' + r.color + '"></span><span class="n">' + esc(r.name) + '</span></button>').join('') +
+    '</div><button class="btn ghost" style="margin-top:14px" onclick="setPlan(' + dow + ',null)">Volno</button>' +
+    '<button class="btn ghost gap" onclick="closeModal()">Zrušit</button>');
+}
+function setPlan(dow, rid){
+  if (rid) D.weeklyPlan[dow] = rid; else delete D.weeklyPlan[dow];
+  save(); closeModal(); renderRoutines();
+}
+
+function pickRoutineFor(k){
+  openModal('<h2 style="font-size:20px">Naplánovat</h2><div class="muted" style="margin-top:4px">Výjimka jen pro tento den.</div>' +
+    '<div style="margin-top:14px">' +
+    D.routines.map(r => '<button class="row" style="border-radius:10px" onclick="setOverride(\'' + k + '\',' + r.id + ')">' +
+      '<span class="tag" style="background:' + r.color + '"></span><span class="n">' + esc(r.name) + '</span></button>').join('') +
+    '</div><button class="btn ghost" style="margin-top:14px" onclick="setOverride(\'' + k + '\',null)">Volno</button>' +
+    '<button class="btn ghost gap" onclick="clearOverride(\'' + k + '\')">Zpět podle rozvrhu</button>' +
+    '<button class="btn ghost gap" onclick="closeModal()">Zrušit</button>');
+}
+function setOverride(k, rid){ D.overrides[k] = rid; save(); closeModal(); renderCalendar(); }
+function clearOverride(k){ delete D.overrides[k]; save(); closeModal(); renderCalendar(); }
+
+/* ---------- editor rutiny ---------- */
+let editId = null;
+function editRoutine(id){
+  editId = id;
+  document.getElementById('push-title').textContent = 'Úprava rutiny';
+  renderEditor();
+  document.getElementById('push').classList.add('on');
+}
+function renderEditor(){
+  const r = routineById(editId);
+  if (!r) return closePush();
+  const rows = r.exercises.map(re => {
+    const e = exById(re.exerciseId);
+    return '<div class="card"><div class="stripe" style="background:' + (e ? mcol(e.muscle) : '#666') + '"></div>' +
+      '<div style="display:flex;align-items:center;gap:10px"><h3 style="flex:1;min-width:0">' + esc(e ? e.name : '?') + '</h3>' +
+      '<button onclick="delRoutineEx(' + re.id + ')" style="color:var(--dim)"><svg class="icon" style="width:18px;height:18px" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
+      stepper('Série', re.sets, 're', re.id, 'sets') +
+      stepper('Opakování', re.repLow === re.repHigh ? re.repLow : re.repLow + '–' + re.repHigh, 're', re.id, 'reps') +
+      stepper('Pauza', re.rest + ' s', 're', re.id, 'rest') + '</div>';
+  }).join('');
+
+  document.getElementById('push-body').innerHTML =
+    '<div style="padding:16px">' +
+      '<div class="eyebrow">Název rutiny</div>' +
+      '<input class="field" id="r-name" value="' + esc(r.name) + '" style="margin-top:6px;font-family:var(--disp);font-size:20px;text-transform:uppercase" onchange="renameRoutine(this.value)">' +
+      '<div class="swatches">' + ROUTINE_COLORS.map(c =>
+        '<button class="swatch ' + (c === r.color ? 'on' : '') + '" style="background:' + c + '" onclick="recolor(\'' + c + '\')"></button>').join('') + '</div>' +
+    '</div>' +
+    '<div class="sec">Cviky</div>' +
+    (r.exercises.length ? rows : '<div class="empty"><h3>Prázdná rutina</h3><p>Přidej první cvik z knihovny.</p></div>') +
+    '<div class="pad"><button class="btn ghost" onclick="pickExerciseFor()">+ Přidat cvik</button>' +
+    '<button class="btn danger gap" onclick="deleteRoutine()">Smazat rutinu</button></div>';
+}
+const stepper = (label, val, kind, id, field) =>
+  '<div class="stepper"><span class="lbl">' + label + '</span>' +
+  '<button onclick="bump(' + id + ',\'' + field + '\',-1)">−</button>' +
+  '<span class="val">' + val + '</span>' +
+  '<button onclick="bump(' + id + ',\'' + field + '\',1)">+</button></div>';
+
+function bump(reId, field, dir){
+  const r = routineById(editId), re = r.exercises.find(x => x.id === reId);
+  if (field === 'sets') re.sets = Math.min(12, Math.max(1, re.sets + dir));
+  if (field === 'reps'){
+    if (dir < 0) re.repLow = Math.max(1, re.repLow - 1);
+    else re.repHigh = Math.min(120, re.repHigh + 1);
+    if (re.repHigh < re.repLow) re.repHigh = re.repLow;
+  }
+  if (field === 'rest') re.rest = Math.min(600, Math.max(30, re.rest + dir*15));
+  save(); renderEditor();
+}
+function renameRoutine(v){ routineById(editId).name = v.trim() || 'Rutina'; save(); renderRoutines(); }
+function recolor(c){ routineById(editId).color = c; save(); renderEditor(); renderRoutines(); }
+function delRoutineEx(reId){
+  const r = routineById(editId);
+  r.exercises = r.exercises.filter(x => x.id !== reId);
+  save(); renderEditor();
+}
+function deleteRoutine(){
+  const r = routineById(editId);
+  if (!confirm('Smazat rutinu „' + r.name + '"?\nOdcvičené tréninky zůstanou zachované.')) return;
+  D.routines = D.routines.filter(x => x.id !== editId);
+  Object.keys(D.weeklyPlan).forEach(k => { if (D.weeklyPlan[k] === editId) delete D.weeklyPlan[k]; });
+  save(); closePush(); renderRoutines();
+}
+function closePush(){ document.getElementById('push').classList.remove('on'); renderRoutines(); renderCalendar(); }
+
+/* ---------- výběr cviku do rutiny ---------- */
+let pickFilter = 'Vše';
+function pickExerciseFor(){
+  openModal('<h2 style="font-size:20px">Přidat cvik</h2>' +
+    '<input class="field" id="p-search" placeholder="Hledat" style="margin-top:12px" oninput="renderPickList()">' +
+    '<div class="wrapchips" id="p-chips"></div>' +
+    '<div id="p-list" style="margin-top:10px;max-height:46vh;overflow-y:auto"></div>' +
+    '<button class="btn ghost" style="margin-top:12px" onclick="closeModal()">Zavřít</button>');
+  pickFilter = 'Vše';
+  renderPickChips(); renderPickList();
+}
+function renderPickChips(){
+  document.getElementById('p-chips').innerHTML = ['Vše', ...muscles()].map(m =>
+    '<button class="chip ' + (m === pickFilter ? 'on' : '') + '" onclick="pickFilter=\'' + m + '\';renderPickChips();renderPickList()">' + m + '</button>').join('');
+}
+function renderPickList(){
+  const q = (document.getElementById('p-search').value || '').toLowerCase();
+  document.getElementById('p-list').innerHTML = D.exercises
+    .filter(e => (pickFilter === 'Vše' || e.muscle === pickFilter) && e.name.toLowerCase().includes(q))
+    .map(e => '<button class="row" onclick="addExToRoutine(' + e.id + ')">' +
+      '<span class="tag" style="background:' + mcol(e.muscle) + '"></span>' +
+      '<span class="n">' + esc(e.name) + '</span><span class="eyebrow">' + e.muscle + '</span></button>').join('');
+}
+function addExToRoutine(exId){
+  const e = exById(exId), r = routineById(editId);
+  r.exercises.push({id:uid(), exerciseId:exId, sets:3,
+    repLow: e.kind === 'time' ? 30 : 8, repHigh: e.kind === 'time' ? 45 : 12,
+    rest: e.kind === 'time' ? 60 : 120});
+  save(); closeModal(); renderEditor();
+}
+
+/* ================================================================
+   KNIHOVNA CVIKŮ
+   ================================================================ */
+let exFilter = 'Vše', formMuscle = 'Prsa', formKind = 'weight';
+
+function renderExercises(){
+  document.getElementById('excount').textContent = D.exercises.length + ' cviků v knihovně';
+  document.getElementById('exchips').innerHTML = ['Vše', ...muscles()].map(m =>
+    '<button class="chip ' + (m === exFilter ? 'on' : '') + '" onclick="exFilter=\'' + m + '\';renderExercises()">' + m + '</button>').join('');
+  document.getElementById('f-muscle').innerHTML = muscles().map(m =>
+    '<button class="chip ' + (m === formMuscle ? 'on' : '') + '" onclick="formMuscle=\'' + m + '\';renderExercises()">' + m + '</button>').join('');
+  document.getElementById('f-kind').innerHTML = Object.keys(KINDS).map(k =>
+    '<button class="chip ' + (k === formKind ? 'on' : '') + '" onclick="formKind=\'' + k + '\';renderExercises()">' + KINDS[k] + '</button>').join('');
+
+  const q = (document.getElementById('exsearch').value || '').toLowerCase();
+  const list = D.exercises
+    .filter(e => (exFilter === 'Vše' || e.muscle === exFilter) && e.name.toLowerCase().includes(q))
+    .sort((a,b) => (b.custom - a.custom) || a.name.localeCompare(b.name, 'cs'));
+
+  document.getElementById('exlist').innerHTML = list.map(e =>
+    '<div class="row" oncontextmenu="return false" ontouchstart="holdStart(' + e.id + ')" ontouchend="holdEnd()" ontouchmove="holdEnd()">' +
+    '<span class="tag" style="background:' + mcol(e.muscle) + '"></span>' +
+    '<span class="n">' + esc(e.name) + '</span>' +
+    (e.custom ? '<span class="badge">vlastní</span>' : '') +
+    '<span class="eyebrow">' + e.muscle + '</span></div>').join('');
+}
+
+let holdT;
+function holdStart(id){ holdT = setTimeout(() => delExercise(id), 600); }
+function holdEnd(){ clearTimeout(holdT); }
+
+function toggleExForm(){
+  const f = document.getElementById('exform');
+  f.classList.toggle('on');
+  document.getElementById('exformbtn').textContent = f.classList.contains('on') ? 'Zrušit' : '+ Vytvořit vlastní cvik';
+  if (f.classList.contains('on')) document.getElementById('f-name').focus();
+}
+function addExercise(){
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) return;
+  if (D.exercises.some(e => e.name.toLowerCase() === name.toLowerCase()))
+    return toast('Cvik s tímhle názvem už existuje.');
+  D.exercises.push({id:uid(), name, muscle:formMuscle, kind:formKind, custom:true});
+  save();
+  document.getElementById('f-name').value = '';
+  toggleExForm(); exFilter = 'Vše'; renderExercises();
+  toast('Cvik přidán');
+}
+function delExercise(id){
+  const e = exById(id);
+  if (!e || !e.custom) return;
+  const used = D.routines.some(r => r.exercises.some(x => x.exerciseId === id));
+  if (used) return toast('Cvik je použitý v rutině.');
+  if (!confirm('Smazat cvik „' + e.name + '"?')) return;
+  D.exercises = D.exercises.filter(x => x.id !== id);
+  save(); renderExercises();
+}
+
+/* ================================================================
+   PROGRES
+   ================================================================ */
+let progEx = null;
+
+function renderProgress(){
+  const prs = personalRecords(20);
+  const box = document.getElementById('progbody');
+  if (!prs.length){
+    box.innerHTML = '<div class="empty"><h3>Ještě není co měřit</h3>' +
+      '<p>Dokonči první trénink a začnou se tu kreslit křivky, objem a rekordy.</p></div>';
+    return;
+  }
+  if (!progEx || !prs.some(p => p.id === progEx)) progEx = prs[0].id;
+
+  const series = e1rmSeries(progEx, 8);
+  const first = series.length ? series[0].value : 0;
+  const last = series.length ? series[series.length-1].value : 0;
+  const delta = first ? (last - first) / first * 100 : 0;
+  const growing = delta > 2;
+
+  const vol = weeklyVolume(8), mx = Math.max(1, ...vol.map(v => v.value));
+  const musc = setsPerMuscle(7);
+  const stag = stagnating();
+
+  box.innerHTML =
+    '<div class="chips">' + prs.slice(0,10).map(p =>
+      '<button class="chip ' + (p.id === progEx ? 'on' : '') + '" onclick="progEx=' + p.id + ';renderProgress()">' + esc(p.name) + '</button>').join('') + '</div>' +
+
+    '<div class="card" style="margin-top:12px">' +
+      '<div style="display:flex;align-items:baseline"><div class="big" style="font-size:40px">' + num(last) + '<small>kg</small></div>' +
+      '<span class="delta ' + (growing ? '' : 'flat') + '">' + (growing ? '▲' : '→') + ' ' + num(Math.abs(delta),0) + ' %</span></div>' +
+      '<div class="muted" style="margin-top:5px">Odhadované 1RM — ' + esc(exById(progEx).name) + '</div>' +
+      chartSVG(series) +
+      (series.length >= 2 ? '<div style="display:flex;justify-content:space-between;margin-top:2px">' +
+        '<span class="axis">' + shortDate(series[0].week) + '</span><span class="axis">' + shortDate(series[series.length-1].week) + '</span></div>' : '') +
+      '<div class="muted" style="font-size:11.5px;margin-top:10px;line-height:1.5">Počítá se z váhy i opakování, takže 80 kg × 5 a 70 kg × 10 jde konečně porovnat.</div>' +
+    '</div>' +
+
+    '<div class="sec">Týdenní objem</div>' +
+    '<div class="card"><div class="bars">' +
+      vol.map((v,i) => '<div class="' + (i === vol.length-1 ? 'hi' : '') + '" style="height:' + Math.max(6, v.value/mx*100) + '%"></div>').join('') +
+      '</div><div class="muted" style="margin-top:11px;font-size:12.5px">Součin váhy a opakování za celý týden. Roste = přidáváš práci.</div></div>' +
+
+    '<div class="sec">Série na partii za 7 dní</div>' +
+    '<div class="card">' + (musc.length ? musc.map(m => {
+      const [lo,hi] = TARGET[m.muscle] || [8,16];
+      const pct = Math.min(1, m.sets / (hi*1.15));
+      return '<div class="mrow"><div class="t"><span>' + m.muscle + '</span><span class="data">' + m.sets + ' sérií · cíl ' + lo + '–' + hi + '</span></div>' +
+        '<div class="track"><i style="width:' + pct*100 + '%;background:' + (m.sets < lo ? 'var(--p15)' : 'var(--chalk)') + '"></i>' +
+        '<u style="left:' + (lo/(hi*1.15))*100 + '%"></u></div></div>';
+    }).join('') : '<div class="muted">Poslední týden bez tréninku.</div>') + '</div>' +
+
+    '<div class="sec">Osobní rekordy</div>' +
+    '<div class="card">' + prs.slice(0,6).map(p =>
+      '<div class="pr"><span class="w">' + num(p.w) + ' kg</span><span class="nm">' + esc(p.name) + '</span><span class="axis">' + shortDate(p.date) + '</span></div>').join('') + '</div>' +
+
+    (stag.length ? '<div class="sec">Upozornění</div>' +
+      '<div class="card" style="border-color:rgba(206,46,46,.45);background:rgba(206,46,46,.08)">' +
+      '<h3 style="font-size:15px">Stagnace</h3><div class="muted" style="margin-top:6px;line-height:1.5">' +
+      esc(stag.join(', ')) + ' — tři týdny beze změny. Zkus shodit na 85 % a najet znovu, nebo cvik posuň na začátek tréninku.</div></div>' : '');
+}
+
+function chartSVG(data){
+  if (data.length < 2) return '<div class="muted" style="margin-top:16px;font-size:12.5px">Potřebuješ aspoň dva týdny dat.</div>';
+  const W = 340, H = 120;
+  const vals = data.map(d => d.value);
+  const mn = Math.min(...vals) - 3, mx = Math.max(...vals) + 3;
+  const pts = data.map((d,i) => [10 + i*(W-20)/(data.length-1), H-10 - (d.value-mn)/(mx-mn)*(H-24)]);
+  const line = pts.map(p => p.map(n => n.toFixed(1)).join(',')).join(' ');
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:120px;margin-top:14px" preserveAspectRatio="none">' +
+    '<polygon points="' + line + ' ' + pts[pts.length-1][0] + ',' + H + ' ' + pts[0][0] + ',' + H + '" fill="#E9E7E1" opacity=".07"/>' +
+    '<polyline points="' + line + '" fill="none" stroke="#E9E7E1" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>' +
+    pts.map((p,i) => '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (i === pts.length-1 ? 4 : 2.5) + '" fill="' + (i === pts.length-1 ? '#E9E7E1' : '#5C636B') + '"/>').join('') +
+    '</svg>';
+}
+
+/* ================================================================
+   TRÉNINK
+   ================================================================ */
+let session = null, rows = {}, clockT = null, restT = null, restLeft = 0, restTotal = 0, wSecs = 0;
+
+function startWorkout(routineId, dateKey){
+  const r = routineById(routineId);
+  session = openSessionFor(dateKey);
+  if (!session){
+    session = {id:uid(), date:dateKey, routineId, durationS:0, finished:false, logs:[]};
+    D.sessions.push(session); save();
+  }
+
+  rows = {};
+  r.exercises.forEach(re => {
+    const last = lastPerformance(re.exerciseId, session.id);
+    const hint = last ? overloadHint(last.sets, re.sets, re.repHigh, last.top.weight) : null;
+    const w = hint ? hint.next : (last ? last.top.weight : 0);
+    rows[re.id] = Array.from({length: re.sets}, () => ({weight: num(w), reps: String(re.repLow), done: false}));
+  });
+
+  document.getElementById('w-title').textContent = r.name;
+  document.getElementById('w-stripe').style.background = r.color;
+  renderWorkout(r);
+  document.getElementById('workout').classList.add('on');
+
+  wSecs = 0;
+  document.getElementById('w-clock').textContent = '00:00';
+  clearInterval(clockT);
+  clockT = setInterval(() => { wSecs++; document.getElementById('w-clock').textContent = clock(wSecs); }, 1000);
+}
+
+const IC_KG = '<svg class="icon" viewBox="0 0 24 24"><path d="M9.5 6.5a2.5 2.5 0 1 1 5 0"/><path d="M6.8 8.5h10.4l1.8 11.5H5z"/></svg>';
+const IC_REP = '<svg class="icon" viewBox="0 0 24 24"><path d="M4 9V7.5A2.5 2.5 0 0 1 6.5 5H17"/><path d="M14 2.2 17.2 5 14 7.8"/><path d="M20 15v1.5a2.5 2.5 0 0 1-2.5 2.5H7"/><path d="M10 21.8 6.8 19 10 16.2"/></svg>';
+const IC_TIME = '<svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg>';
+const IC_CALC = '<svg class="icon" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8.5 7.5h7M8.5 12h1.5M14 12h1.5M8.5 16h1.5M14 16h1.5"/></svg>';
+const IC_CHECK = '<svg class="icon" viewBox="0 0 24 24"><path d="M5 12.5l5 5 9-11"/></svg>';
+const IC_UP = '<svg class="icon" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>';
+
+function renderWorkout(r){
+  document.getElementById('w-body').innerHTML = r.exercises.map(re => {
+    const e = exById(re.exerciseId);
+    const last = lastPerformance(re.exerciseId, session.id);
+    const hint = last ? overloadHint(last.sets, re.sets, re.repHigh, last.top.weight) : null;
+    const w = rows[re.id][0].weight;
+
+    return '<div class="exblk">' +
+      '<div class="exhd"><h3>' + esc(e.name) + '</h3>' +
+      (e.kind === 'weight' ? '<button class="iconbtn" onclick="openPlates(' + (parseFloat(String(w).replace(',','.')) || 60) + ')">' + IC_CALC + '</button>' : '') +
+      '</div>' +
+      (hint ? '<div class="hint">' + IC_UP + '<span>' + hint.text + '</span></div>' : '') +
+      '<div class="sgrid"><div class="shd"><span>#</span><span>Minule</span>' +
+        '<span class="ic">' + (e.kind === 'time' ? IC_TIME : IC_KG) + '</span><span class="ic">' + IC_REP + '</span><span></span></div>' +
+      rows[re.id].map((s,i) =>
+        '<div class="srow' + (s.done ? ' done' : '') + '" id="row-' + re.id + '-' + i + '">' +
+        '<span class="idx">' + (i+1) + '</span>' +
+        '<span class="last">' + (last && last.sets[i] ? num(last.sets[i].weight) + ' × ' + last.sets[i].reps : '—') + '</span>' +
+        '<input inputmode="decimal" value="' + s.weight + '" onchange="setVal(' + re.id + ',' + i + ',\'weight\',this.value)">' +
+        '<input inputmode="numeric" value="' + s.reps + '" onchange="setVal(' + re.id + ',' + i + ',\'reps\',this.value)">' +
+        '<button class="tick" onclick="tick(' + re.id + ',' + i + ',' + re.exerciseId + ',' + re.rest + ')">' + IC_CHECK + '</button>' +
+        '</div>').join('') +
+      '</div></div>';
+  }).join('') +
+  '<div class="pad" style="padding-top:18px"><button class="btn" onclick="finishWorkout()">Dokončit trénink</button></div>';
+}
+
+function setVal(reId, i, field, v){ rows[reId][i][field] = v; }
+
+function tick(reId, i, exerciseId, rest){
+  const s = rows[reId][i];
+  s.done = !s.done;
+  document.getElementById('row-' + reId + '-' + i).classList.toggle('done', s.done);
+
+  const w = parseFloat(String(s.weight).replace(',','.')) || 0;
+  const reps = parseInt(s.reps, 10) || 0;
+  const idx = D.sessions.findIndex(x => x.id === session.id);
+  session.logs = session.logs.filter(l => !(l.exerciseId === exerciseId && l.setIndex === i));
+  if (s.done){
+    session.logs.push({exerciseId, setIndex:i, weight:w, reps});
+    haptic(15);
+    startRest(rest);
+  }
+  D.sessions[idx] = session;
+  save();
+}
+
+function startRest(sec){
+  clearInterval(restT);
+  restLeft = sec; restTotal = sec;
+  document.getElementById('rest').classList.add('on');
+  drawRest();
+  restT = setInterval(() => {
+    restLeft--;
+    if (restLeft <= 0){ clearInterval(restT); skipRest(); haptic([40,60,40]); toast('Pauza uplynula'); }
+    else drawRest();
+  }, 1000);
+}
+function drawRest(){
+  document.getElementById('restnum').textContent = mmss(restLeft);
+  document.getElementById('ringfill').style.strokeDashoffset = 100.5 * (1 - restLeft/restTotal);
+}
+function addRest(n){ restLeft += n; restTotal = Math.max(restTotal, restLeft); drawRest(); }
+function skipRest(){ clearInterval(restT); document.getElementById('rest').classList.remove('on'); }
+
+function quitWorkout(){
+  if (!confirm('Ukončit trénink?\nOdškrtnuté série zůstanou uložené.')) return;
+  closeWorkout();
+}
+function closeWorkout(){
+  document.getElementById('workout').classList.remove('on');
+  clearInterval(clockT); skipRest();
+  renderCalendar();
+}
+
+function finishWorkout(){
+  if (!session.logs.length){
+    if (!confirm('Nic není odškrtnuté. Zahodit trénink?')) return;
+    D.sessions = D.sessions.filter(s => s.id !== session.id);
+    save(); closeWorkout(); return;
+  }
+  session.finished = true;
+  session.durationS = wSecs;
+  const idx = D.sessions.findIndex(x => x.id === session.id);
+  D.sessions[idx] = session;
+  save();
+  const id = session.id;
+  closeWorkout();
+  shareCard('post', id);
+}
+
+/* ================================================================
+   KALKULAČKA KOTOUČŮ
+   ================================================================ */
+let calcW = 100;
+function openPlates(w){ calcW = Math.max(20, w); drawPlates(); }
+function drawPlates(){
+  const p = plates(calcW);
+  openModal('<h2 style="font-size:20px">Naložení osy</h2>' +
+    '<div class="muted" style="margin-top:4px">Osa 20 kg · zobrazena jedna strana</div>' +
+    '<div class="bar"><div class="sleeve"></div>' +
+    p.list.map(x => '<div class="plate" style="height:' + x.h + 'px;width:' + (x.kg >= 10 ? 13 : x.kg >= 5 ? 9 : 7) + 'px;background:' + x.color + '"></div>').join('') +
+    '<div class="collar"></div></div>' +
+    '<div class="total"><b>' + num(calcW,2) + ' kg</b><span class="data">' + num(p.side,2) + ' kg na stranu' +
+    (p.rest > 0 ? ' · zbývá ' + num(p.rest,2) : '') + '</span></div>' +
+    '<div class="steps">' + [-5,-2.5,2.5,5].map(d =>
+      '<button onclick="stepPlates(' + d + ')">' + (d > 0 ? '+' : '−') + ' ' + num(Math.abs(d)) + '</button>').join('') + '</div>' +
+    '<button class="btn ghost" style="margin-top:14px" onclick="closeModal()">Zavřít</button>');
+}
+function stepPlates(d){ calcW = Math.max(20, calcW + d); drawPlates(); }
+
+function openModal(html){ document.getElementById('modal-body').innerHTML = html; document.getElementById('modal').classList.add('on'); }
+function closeModal(){ document.getElementById('modal').classList.remove('on'); }
+
+/* ================================================================
+   SDÍLECÍ KARTY — kreslené na canvas, takže vzniká skutečný PNG
+   ================================================================ */
+const CW = 1080, CH = 1350;
+let shareBlob = null, shareName = 'zelezo.png';
+
+function shareCard(mode, a, b){
+  const cv = document.getElementById('cardcanvas');
+  const g = cv.getContext('2d');
+  if (mode === 'pre') drawPreCard(g, routineById(a), fromKey(b));
+  else drawPostCard(g, D.sessions.find(s => s.id === a));
+  document.getElementById('share').classList.add('on');
+  cv.toBlob(bl => { shareBlob = bl; }, 'image/png');
+}
+function closeShare(){ document.getElementById('share').classList.remove('on'); renderCalendar(); }
+
+function roundRect(g,x,y,w,h,r){
+  g.beginPath();
+  g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r);
+  g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath();
+}
+function line(g,y){ g.strokeStyle = '#22262B'; g.lineWidth = 2; g.beginPath(); g.moveTo(60,y); g.lineTo(CW-60,y); g.stroke(); }
+
+function cardBase(g){
+  g.clearRect(0,0,CW,CH);
+  g.fillStyle = '#101215'; g.fillRect(0,0,CW,CH);
+}
+function cardFoot(g, color){
+  g.fillStyle = '#0B0D0F'; g.fillRect(0, CH-110, CW, 110);
+  g.strokeStyle = '#22262B'; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(0, CH-110); g.lineTo(CW, CH-110); g.stroke();
+  g.fillStyle = '#5C636B'; g.font = '600 34px Oswald, sans-serif'; g.textAlign = 'left';
+  g.letterSpacing = '8px';
+  g.fillText('ŽELEZO', 60, CH-45);
+  g.letterSpacing = '0px';
+  [46,36,26,18].forEach((h,i) => {
+    g.globalAlpha = 1 - i*0.24; g.fillStyle = color;
+    roundRect(g, CW-60-(i+1)*22, CH-40-h, 14, h, 4); g.fill();
+  });
+  g.globalAlpha = 1;
+}
+
+/** Karta před tréninkem — pozvánka pro parťáka. */
+function drawPreCard(g, r, date){
+  cardBase(g);
+  g.fillStyle = r.color; g.fillRect(0,0,CW,420);
+  g.save(); g.globalAlpha = .16; g.fillStyle = '#fff';
+  g.beginPath(); g.arc(CW-40, 40, 260, 0, 7); g.fill(); g.restore();
+
+  g.textAlign = 'left';
+  g.fillStyle = 'rgba(255,255,255,.85)'; g.font = '400 26px "IBM Plex Mono", monospace';
+  g.letterSpacing = '5px';
+  g.fillText(dateLabel(date).toUpperCase(), 60, 110);
+  g.letterSpacing = '0px';
+
+  g.fillStyle = '#fff'; g.font = '700 128px Oswald, sans-serif';
+  g.fillText(r.name.toUpperCase(), 58, 250);
+
+  g.fillStyle = 'rgba(255,255,255,.9)'; g.font = '400 30px "IBM Plex Mono", monospace';
+  g.fillText(r.exercises.length + ' cviků · ' + r.exercises.reduce((a,e)=>a+e.sets,0) + ' sérií', 60, 320);
+
+  let y = 500;
+  r.exercises.slice(0,7).forEach(re => {
+    const e = exById(re.exerciseId);
+    g.fillStyle = '#E9E7E1'; g.font = '400 36px "IBM Plex Sans", sans-serif'; g.textAlign = 'left';
+    g.fillText(clip(g, e ? e.name : '?', 620), 60, y);
+    g.fillStyle = '#868D95'; g.font = '400 32px "IBM Plex Mono", monospace'; g.textAlign = 'right';
+    g.fillText(re.sets + ' × ' + (re.repLow === re.repHigh ? re.repLow : re.repLow + '–' + re.repHigh), CW-60, y);
+    line(g, y+28); y += 88;
+  });
+
+  cardFoot(g, r.color);
+}
+
+/** Karta po tréninku — chlouba do skupiny. */
+function drawPostCard(g, s){
+  const r = routineById(s.routineId), sum = summarize(s);
+  cardBase(g);
+  g.save(); g.globalAlpha = .18; g.fillStyle = r.color;
+  g.beginPath(); g.arc(CW-40, 40, 260, 0, 7); g.fill(); g.restore();
+
+  g.textAlign = 'left';
+  g.fillStyle = r.color; g.font = '400 26px "IBM Plex Mono", monospace';
+  g.letterSpacing = '5px';
+  g.fillText((dateLabel(fromKey(s.date)) + ' · odcvičeno').toUpperCase(), 60, 110);
+  g.letterSpacing = '0px';
+
+  g.fillStyle = '#E9E7E1'; g.font = '700 128px Oswald, sans-serif';
+  g.fillText(r.name.toUpperCase(), 58, 250);
+  g.fillStyle = '#868D95'; g.font = '400 30px "IBM Plex Mono", monospace';
+  g.fillText(sum.sets + ' sérií dokončeno', 60, 316);
+
+  const stats = [
+    [num(sum.volume/1000), 't', 'Objem'],
+    [String(Math.max(1, Math.round(s.durationS/60))), 'min', 'Čas'],
+    [String(sum.sets), '', 'Série']
+  ];
+  stats.forEach(([v,u,l], i) => {
+    const x = 60 + i*320;
+    g.fillStyle = '#E9E7E1'; g.font = '600 84px Oswald, sans-serif'; g.textAlign = 'left';
+    g.fillText(v, x, 450);
+    if (u){
+      const w = g.measureText(v).width;
+      g.fillStyle = '#868D95'; g.font = '400 34px "IBM Plex Sans", sans-serif';
+      g.fillText(' ' + u, x + w, 450);
+    }
+    g.fillStyle = '#5C636B'; g.font = '400 24px "IBM Plex Mono", monospace';
+    g.letterSpacing = '3px'; g.fillText(l.toUpperCase(), x, 496); g.letterSpacing = '0px';
+  });
+
+  let y = 610;
+  if (sum.prs.length){
+    g.fillStyle = 'rgba(229,183,42,.12)'; roundRect(g, 60, y-46, CW-120, 84, 16); g.fill();
+    g.strokeStyle = 'rgba(229,183,42,.45)'; g.lineWidth = 2; g.stroke();
+    g.fillStyle = '#F0D57C'; g.font = '400 30px "IBM Plex Sans", sans-serif'; g.textAlign = 'left';
+    const txt = '★ Nový rekord — ' + sum.prs.map(p => p.name + ' ' + num(p.weight) + ' kg').join(', ');
+    g.fillText(clip(g, txt, CW-160), 90, y+4);
+    y += 120;
+  }
+
+  sum.perEx.slice(0,7).forEach(x => {
+    g.fillStyle = '#E9E7E1'; g.font = '400 36px "IBM Plex Sans", sans-serif'; g.textAlign = 'left';
+    g.fillText(clip(g, x.name, 640), 60, y);
+    g.strokeStyle = '#1E8A4C'; g.lineWidth = 5; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(CW-100, y-6); g.lineTo(CW-86, y+8); g.lineTo(CW-60, y-24); g.stroke();
+    line(g, y+28); y += 88;
+  });
+
+  cardFoot(g, r.color);
+}
+
+function clip(g, text, maxW){
+  if (g.measureText(text).width <= maxW) return text;
+  let t = text;
+  while (t.length > 4 && g.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+  return t + '…';
+}
+
+async function doShare(){
+  const btn = document.getElementById('sharebtn');
+  if (!shareBlob){ toast('Obrázek se ještě připravuje'); return; }
+  const file = new File([shareBlob], shareName, {type:'image/png'});
+  try {
+    if (navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file]});
+      return;
+    }
+  } catch(e){ if (e && e.name === 'AbortError') return; }
+  const url = URL.createObjectURL(shareBlob);
+  const a = document.createElement('a');
+  a.href = url; a.download = shareName; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+  btn.textContent = 'Uloženo';
+  setTimeout(() => btn.textContent = 'Sdílet', 1800);
+}
+
+/* ================================================================
+   NASTAVENÍ / ZÁLOHA
+   ================================================================ */
+function openSettings(){
+  const warn = Store.persistent() ? '' :
+    '<div class="hint" style="margin:0 0 14px;background:rgba(229,183,42,.11);border-color:rgba(229,183,42,.4);color:#F0D57C">' +
+    '<span>Prohlížeč nepovolil trvalé úložiště — data se po zavření ztratí. Otevři appku přes ikonu na ploše.</span></div>';
+  openModal('<h2 style="font-size:20px">Nastavení</h2>' + warn +
+    '<div class="muted" style="margin:10px 0 14px;line-height:1.5">Data jsou uložená jen v tomhle telefonu. ' +
+    'Záloha se hodí před výměnou zařízení nebo mazáním dat prohlížeče.</div>' +
+    '<button class="btn ghost" onclick="loadRecommended()">Načíst doporučené rutiny</button>' +
+    '<div class="muted" style="margin:8px 0 14px;font-size:11.5px;line-height:1.5">Stáhne aktuální program ' +
+    'a přidá ho k tomu, co už máš. Nic nesmaže.</div>' +
+    '<button class="btn ghost" onclick="exportData()">Stáhnout zálohu</button>' +
+    '<button class="btn ghost gap" onclick="document.getElementById(\'importfile\').click()">Načíst soubor</button>' +
+    '<div class="muted" style="margin-top:8px;font-size:11.5px;line-height:1.5">Načíst můžeš zálohu (nahradí všechno) ' +
+    'nebo balíček rutin (jen přidá cviky a rutiny, historie zůstane).</div>' +
+    '<button class="btn danger gap" onclick="resetAll()">Smazat všechna data</button>' +
+    '<button class="btn ghost gap" onclick="closeModal()">Zavřít</button>' +
+    '<div class="muted" style="text-align:center;margin-top:14px;font-size:11.5px">Železo · ' + D.sessions.filter(s=>s.finished).length + ' odcvičených tréninků</div>');
+}
+/** Stáhne balíček rutin ležící vedle aplikace, ať se nemusí hledat v souborech. */
+async function loadRecommended(){
+  toast('Stahuji…');
+  try {
+    const res = await fetch('rutiny-vrsek-tela.json', {cache:'no-store'});
+    if (!res.ok) throw new Error(res.status);
+    const pack = await res.json();
+    if (pack.type !== 'zelezo-pack') throw new Error('format');
+    mergePack(pack);
+  } catch(e){
+    toast('Nepodařilo se stáhnout — zkus to s internetem');
+  }
+}
+
+function exportData(){
+  const blob = new Blob([JSON.stringify(D, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'zelezo-zaloha-' + key(today()) + '.json';
+  a.click();
+  toast('Záloha stažena');
+}
+function importData(file){
+  const fr = new FileReader();
+  fr.onload = () => {
+    let d;
+    try { d = JSON.parse(fr.result); } catch(e){ return toast('Soubor se nepodařilo přečíst'); }
+
+    // Balíček rutin — přidá, co chybí, a nesahá na odcvičené tréninky.
+    if (d.type === 'zelezo-pack') return mergePack(d);
+
+    // Plná záloha — nahradí všechno.
+    if (d.exercises && d.routines && d.version){
+      if (!confirm('Načíst zálohu?\nNahradí to všechna současná data včetně historie tréninků.')) return;
+      D = d; save(); closeModal(); jumpToday(); go('cal');
+      return toast('Záloha načtena');
+    }
+    toast('Neznámý formát souboru');
+  };
+  fr.readAsText(file);
+}
+
+/** Sloučí balíček rutin se stávajícími daty. Historie zůstává nedotčená. */
+function mergePack(pack){
+  let newEx = 0, newRt = 0;
+  const byName = {};
+  D.exercises.forEach(e => byName[e.name.toLowerCase()] = e);
+
+  (pack.exercises || []).forEach(pe => {
+    const hit = byName[pe.name.toLowerCase()];
+    if (hit) return;
+    const e = {id:uid(), name:pe.name, muscle:pe.muscle, kind:pe.kind || 'weight', custom:false};
+    D.exercises.push(e); byName[e.name.toLowerCase()] = e; newEx++;
+  });
+
+  const made = {};
+  (pack.routines || []).forEach(pr => {
+    let name = pr.name, n = 2;
+    while (D.routines.some(r => r.name.toLowerCase() === name.toLowerCase())) name = pr.name + ' ' + n++;
+    const r = {id:uid(), name, color:pr.color || ROUTINE_COLORS[D.routines.length % ROUTINE_COLORS.length], exercises:[]};
+    (pr.exercises || []).forEach(x => {
+      const e = byName[x.name.toLowerCase()];
+      if (!e) return;
+      r.exercises.push({id:uid(), exerciseId:e.id, sets:x.sets, repLow:x.repLow, repHigh:x.repHigh, rest:x.rest});
+    });
+    D.routines.push(r); made[pr.name] = r.id; newRt++;
+  });
+
+  if (pack.weeklyPlan && confirm('Nastavit i týdenní rozvrh podle balíčku?\nStávající rozvrh se přepíše.')){
+    D.weeklyPlan = {};
+    Object.keys(pack.weeklyPlan).forEach(dow => {
+      const id = made[pack.weeklyPlan[dow]];
+      if (id) D.weeklyPlan[dow] = id;
+    });
+  }
+
+  save(); closeModal(); jumpToday(); go('rut');
+  toast('Přidáno: ' + newRt + ' rutin, ' + newEx + ' cviků');
+}
+function resetAll(){
+  if (!confirm('Opravdu smazat všechno?\nRutiny, cviky i celou historii tréninků.')) return;
+  try { localStorage.removeItem(KEY); } catch(e){}
+  memFallback = null;
+  initDB(); closeModal(); jumpToday(); go('cal');
+  toast('Vymazáno');
+}
+
+/* ================================================================
+   START
+   ================================================================ */
+initDB();
+const t0 = today();
+viewY = t0.getFullYear(); viewM = t0.getMonth(); sel = t0;
+
+const fi = document.createElement('input');
+fi.type = 'file'; fi.accept = 'application/json'; fi.id = 'importfile'; fi.style.display = 'none';
+fi.onchange = e => { if (e.target.files[0]) importData(e.target.files[0]); };
+document.body.appendChild(fi);
+
+renderCalendar(); renderRoutines(); renderExercises(); renderProgress();
+
+if ('serviceWorker' in navigator){
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+
+/* Obrazovka nesmí zhasnout uprostřed série. */
+let wakeLock = null;
+async function keepAwake(){
+  try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
+keepAwake();
+</script>
+</body>
+</html>

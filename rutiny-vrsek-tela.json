@@ -1,0 +1,290 @@
+{
+  "type": "zelezo-pack",
+  "name": "Vršek + zadek a břicho, 3× týdně",
+  "note": "Priorita ramena, paže, předloktí, prsa a šířka zad. Třetí den zadek a břicho se zátěží. Krk 2× týdně v obou směrech.",
+  "exercises": [
+    {
+      "name": "Tlak s jednoručkami na šikmé lavici",
+      "muscle": "Prsa",
+      "kind": "weight"
+    },
+    {
+      "name": "Upažování na kladce",
+      "muscle": "Ramena",
+      "kind": "weight"
+    },
+    {
+      "name": "Tricepsové extenze nad hlavu",
+      "muscle": "Triceps",
+      "kind": "weight"
+    },
+    {
+      "name": "Stahování s napjatýma rukama",
+      "muscle": "Záda",
+      "kind": "weight"
+    },
+    {
+      "name": "Bicepsový zdvih na šikmé lavici",
+      "muscle": "Biceps",
+      "kind": "weight"
+    },
+    {
+      "name": "Zdvih zápěstí",
+      "muscle": "Předloktí",
+      "kind": "weight"
+    },
+    {
+      "name": "Obrácený zdvih",
+      "muscle": "Předloktí",
+      "kind": "weight"
+    },
+    {
+      "name": "Farmářská chůze",
+      "muscle": "Předloktí",
+      "kind": "time"
+    },
+    {
+      "name": "Flexe krku s kotoučem",
+      "muscle": "Krk",
+      "kind": "weight"
+    },
+    {
+      "name": "Extenze krku s postrojem",
+      "muscle": "Krk",
+      "kind": "weight"
+    },
+    {
+      "name": "Boční flexe krku",
+      "muscle": "Krk",
+      "kind": "weight"
+    },
+    {
+      "name": "Hip thrust",
+      "muscle": "Nohy",
+      "kind": "weight"
+    },
+    {
+      "name": "Chodící výpady s jednoručkami",
+      "muscle": "Nohy",
+      "kind": "weight"
+    },
+    {
+      "name": "Zanožování na kladce",
+      "muscle": "Nohy",
+      "kind": "weight"
+    },
+    {
+      "name": "Přítahy kolen na kladce vkleče",
+      "muscle": "Břicho",
+      "kind": "weight"
+    },
+    {
+      "name": "Pallofův tlak",
+      "muscle": "Břicho",
+      "kind": "weight"
+    },
+    {
+      "name": "Tlak na stroji",
+      "muscle": "Prsa",
+      "kind": "weight"
+    },
+    {
+      "name": "Rozpažování na kladce",
+      "muscle": "Prsa",
+      "kind": "weight"
+    }
+  ],
+  "routines": [
+    {
+      "name": "Tlaky",
+      "color": "#CE2E2E",
+      "exercises": [
+        {
+          "name": "Tlak s jednoručkami na šikmé lavici",
+          "sets": 4,
+          "repLow": 6,
+          "repHigh": 10,
+          "rest": 180
+        },
+        {
+          "name": "Rozpažování na kladce",
+          "sets": 3,
+          "repLow": 12,
+          "repHigh": 15,
+          "rest": 90
+        },
+        {
+          "name": "Tlak na stroji",
+          "sets": 3,
+          "repLow": 8,
+          "repHigh": 12,
+          "rest": 150
+        },
+        {
+          "name": "Tlak s jednoručkami nad hlavu",
+          "sets": 3,
+          "repLow": 8,
+          "repHigh": 12,
+          "rest": 150
+        },
+        {
+          "name": "Upažování na kladce",
+          "sets": 4,
+          "repLow": 12,
+          "repHigh": 20,
+          "rest": 90
+        },
+        {
+          "name": "Tricepsové extenze nad hlavu",
+          "sets": 3,
+          "repLow": 10,
+          "repHigh": 15,
+          "rest": 90
+        },
+        {
+          "name": "Tricepsové stahování kladky",
+          "sets": 3,
+          "repLow": 12,
+          "repHigh": 15,
+          "rest": 75
+        }
+      ]
+    },
+    {
+      "name": "Tahy",
+      "color": "#2158CC",
+      "exercises": [
+        {
+          "name": "Shyby nadhmatem",
+          "sets": 4,
+          "repLow": 6,
+          "repHigh": 12,
+          "rest": 180
+        },
+        {
+          "name": "Přítahy jednoruček v předklonu",
+          "sets": 3,
+          "repLow": 8,
+          "repHigh": 12,
+          "rest": 150
+        },
+        {
+          "name": "Stahování s napjatýma rukama",
+          "sets": 3,
+          "repLow": 12,
+          "repHigh": 15,
+          "rest": 90
+        },
+        {
+          "name": "Face pull",
+          "sets": 3,
+          "repLow": 15,
+          "repHigh": 20,
+          "rest": 75
+        },
+        {
+          "name": "Upažování s jednoručkami",
+          "sets": 4,
+          "repLow": 12,
+          "repHigh": 20,
+          "rest": 90
+        },
+        {
+          "name": "Bicepsový zdvih na šikmé lavici",
+          "sets": 3,
+          "repLow": 8,
+          "repHigh": 12,
+          "rest": 90
+        },
+        {
+          "name": "Kladivový zdvih",
+          "sets": 3,
+          "repLow": 10,
+          "repHigh": 15,
+          "rest": 90
+        }
+      ]
+    },
+    {
+      "name": "Zadek, břicho a ramena",
+      "color": "#1E8A4C",
+      "exercises": [
+        {
+          "name": "Hip thrust",
+          "sets": 4,
+          "repLow": 8,
+          "repHigh": 12,
+          "rest": 150
+        },
+        {
+          "name": "Chodící výpady s jednoručkami",
+          "sets": 3,
+          "repLow": 10,
+          "repHigh": 12,
+          "rest": 120
+        },
+        {
+          "name": "Rumunský mrtvý tah",
+          "sets": 3,
+          "repLow": 8,
+          "repHigh": 12,
+          "rest": 150
+        },
+        {
+          "name": "Přítahy kolen na kladce vkleče",
+          "sets": 4,
+          "repLow": 10,
+          "repHigh": 15,
+          "rest": 90
+        },
+        {
+          "name": "Zvedání nohou ve visu",
+          "sets": 3,
+          "repLow": 10,
+          "repHigh": 15,
+          "rest": 90
+        },
+        {
+          "name": "Upažování s jednoručkami",
+          "sets": 3,
+          "repLow": 12,
+          "repHigh": 20,
+          "rest": 90
+        },
+        {
+          "name": "Zdvih zápěstí",
+          "sets": 3,
+          "repLow": 15,
+          "repHigh": 20,
+          "rest": 60
+        },
+        {
+          "name": "Obrácený zdvih",
+          "sets": 2,
+          "repLow": 12,
+          "repHigh": 15,
+          "rest": 60
+        },
+        {
+          "name": "Flexe krku s kotoučem",
+          "sets": 2,
+          "repLow": 15,
+          "repHigh": 20,
+          "rest": 60
+        },
+        {
+          "name": "Extenze krku s postrojem",
+          "sets": 2,
+          "repLow": 15,
+          "repHigh": 20,
+          "rest": 60
+        }
+      ]
+    }
+  ],
+  "weeklyPlan": {
+    "1": "Tlaky",
+    "3": "Tahy",
+    "5": "Zadek, břicho a ramena"
+  }
+}
