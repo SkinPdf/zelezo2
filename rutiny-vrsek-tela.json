@@ -1,7 +1,7 @@
 {
   "type": "zelezo-pack",
   "name": "4 dny v posilovně + 3 běhy",
-  "note": "Út nohy/core/krk/předloktí, Čt pump, So push, Ne pull. Po/St/Pá běh. Ramena a prsa 2× týdně, hamstringy a lýtka doplněné kvůli běhu.",
+  "note": "Po/St lehký běh 140–155 tepů, Pá tvrdý. Út nohy/core/krk/předloktí, Čt pump, So push, Ne pull. Běhy se zapisují jako km, čas a tep.",
   "exercises": [
     {
       "name": "Tlak s jednoručkami na šikmé lavici",
@@ -92,6 +92,21 @@
       "name": "Rozpažování na kladce",
       "muscle": "Prsa",
       "kind": "weight"
+    },
+    {
+      "name": "Běh lehký",
+      "muscle": "Kardio",
+      "kind": "cardio"
+    },
+    {
+      "name": "Běh tempový",
+      "muscle": "Kardio",
+      "kind": "cardio"
+    },
+    {
+      "name": "HIIT / intervaly",
+      "muscle": "Kardio",
+      "kind": "cardio"
     }
   ],
   "routines": [
@@ -307,11 +322,40 @@
           "rest": 75
         }
       ]
+    },
+    {
+      "name": "Běh lehký",
+      "color": "#6BC5D2",
+      "exercises": [
+        {
+          "name": "Běh lehký",
+          "sets": 1,
+          "repLow": 30,
+          "repHigh": 40,
+          "rest": 60
+        }
+      ]
+    },
+    {
+      "name": "Běh tvrdý",
+      "color": "#EC6F2A",
+      "exercises": [
+        {
+          "name": "Běh tempový",
+          "sets": 1,
+          "repLow": 25,
+          "repHigh": 35,
+          "rest": 60
+        }
+      ]
     }
   ],
   "weeklyPlan": {
+    "1": "Běh lehký",
     "2": "Nohy, core a detaily",
+    "3": "Běh lehký",
     "4": "Upper pump",
+    "5": "Běh tvrdý",
     "6": "Push (těžký)",
     "0": "Pull (těžký)"
   }
