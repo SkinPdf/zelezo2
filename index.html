@@ -179,6 +179,8 @@ h3{font-family:var(--disp);font-weight:500;font-size:17px;text-transform:upperca
 .srow{padding:5px 0}
 .srow .idx{font-family:var(--mono);font-size:13px;color:var(--dim);text-align:center}
 .srow .last{font-family:var(--mono);font-size:12px;color:var(--dim);overflow:hidden;white-space:nowrap}
+.shd.cardio,.srow.cardio{grid-template-columns:22px 1fr 1fr 1fr 36px}
+.lastrun{font-family:var(--mono);font-size:11.5px;color:var(--dim);padding:8px 0 2px}
 .srow input{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 0;text-align:center;color:var(--chalk);font-family:var(--mono);font-size:14.5px}
 .srow input:focus{outline:none;border-color:var(--chalk)}
 .srow.done input{background:transparent;border-color:transparent;color:var(--muted)}
@@ -408,10 +410,10 @@ const TEMPLATES = [
 ];
 
 const MUSCLE_COLOR = {Prsa:'#CE2E2E','Záda':'#2158CC',Nohy:'#1E8A4C',Ramena:'#E5B72A',
-  Biceps:'#8B5CF6',Triceps:'#EC6F2A','Břicho':'#3AA8A8','Předloktí':'#6E8FA8',Krk:'#D9536F'};
+  Biceps:'#8B5CF6',Triceps:'#EC6F2A','Břicho':'#3AA8A8','Předloktí':'#6E8FA8',Krk:'#D9536F',Kardio:'#6BC5D2'};
 const mcol = m => MUSCLE_COLOR[m] || '#6B7280';
 const ROUTINE_COLORS = ['#CE2E2E','#2158CC','#1E8A4C','#E5B72A','#8B5CF6','#EC6F2A','#3AA8A8'];
-const KINDS = {weight:'Váha × opakování', body:'Vlastní váha', time:'Čas (výdrž)'};
+const KINDS = {weight:'Váha × opakování', body:'Vlastní váha', time:'Čas (výdrž)', cardio:'Kardio (km, čas, tep)'};
 const TARGET = {Prsa:[10,20],'Záda':[10,20],Nohy:[10,20],Ramena:[10,24],Biceps:[8,16],Triceps:[8,16],
   'Břicho':[8,18],'Předloktí':[4,12],Krk:[4,10]};
 
@@ -550,9 +552,37 @@ function weeklyVolume(weeks=8){
 function setsPerMuscle(days=7){
   const from = key(addDays(today(), -days)), m = {};
   D.sessions.filter(s => s.finished && s.date >= from).forEach(s => {
-    s.logs.forEach(l => { const e = exById(l.exerciseId); if (e) m[e.muscle] = (m[e.muscle]||0) + 1; });
+    s.logs.forEach(l => { const e = exById(l.exerciseId); if (e && e.kind !== 'cardio') m[e.muscle] = (m[e.muscle]||0) + 1; });
   });
   return Object.keys(m).map(k => ({muscle:k, sets:m[k]})).sort((a,b) => b.sets - a.sets);
+}
+
+/** Historie běhů, nejnovější první. */
+function cardioLog(limit=60){
+  const out = [];
+  D.sessions.filter(s => s.finished).forEach(s => s.logs.forEach(l => {
+    const e = exById(l.exerciseId);
+    if (e && e.kind === 'cardio' && (l.dist || l.min))
+      out.push({date:s.date, name:e.name, dist:l.dist||0, min:l.min||0, hr:l.hr||0});
+  }));
+  return out.sort((a,b) => a.date < b.date ? 1 : -1).slice(0, limit);
+}
+
+/** Tempo v min/km — nižší je lepší, proto se u něj obrací i barva trendu. */
+const pace = r => r.dist > 0 ? r.min / r.dist : 0;
+const paceStr = r => {
+  if (!r.dist) return '—';
+  const p = pace(r), m = Math.floor(p);
+  return m + ':' + String(Math.round((p - m) * 60)).padStart(2,'0') + ' /km';
+};
+
+function weeklyKm(weeks=8){
+  const from = key(addDays(today(), -7*weeks)), byWeek = {};
+  cardioLog(200).filter(r => r.date >= from).forEach(r => {
+    const w = weekOf(r.date);
+    byWeek[w] = (byWeek[w] || 0) + r.dist;
+  });
+  return Object.keys(byWeek).sort().map(k => ({week:k, value:byWeek[k]}));
 }
 
 function personalRecords(limit=20){
@@ -560,6 +590,8 @@ function personalRecords(limit=20){
   D.sessions.filter(s => s.finished).forEach(s => {
     s.logs.forEach(l => {
       if (l.weight <= 0) return;
+      const ex = exById(l.exerciseId);
+      if (ex && ex.kind === 'cardio') return;
       if (!best[l.exerciseId] || l.weight > best[l.exerciseId].w)
         best[l.exerciseId] = {id:l.exerciseId, w:l.weight, date:s.date};
     });
@@ -582,6 +614,7 @@ function stagnating(){
 
 function summarize(session){
   const volume = session.logs.reduce((a,l) => a + l.weight * l.reps, 0);
+  const km = session.logs.reduce((a,l) => a + (l.dist || 0), 0);
   const perEx = [];
   session.logs.forEach(l => {
     let x = perEx.find(p => p.id === l.exerciseId);
@@ -595,7 +628,7 @@ function summarize(session){
       s.logs.filter(l => l.exerciseId === x.id).forEach(l => { if (l.weight > prev) prev = l.weight; }));
     if (x.top > 0 && x.top > prev) prs.push({name:x.name, weight:x.top});
   });
-  return {sets: session.logs.length, volume, perEx, prs, durationS: session.durationS};
+  return {sets: session.logs.length, volume, km, perEx, prs, durationS: session.durationS};
 }
 
 /* ================================================================
@@ -673,7 +706,9 @@ function renderDayCard(){
   if (done){
     const s = summarize(done);
     body = '<div class="stats" style="margin:12px 0 4px">' +
-      '<div><div class="big">' + num(s.volume/1000) + '<small>t</small></div><div class="eyebrow" style="margin-top:4px">Objem</div></div>' +
+      (s.km > 0
+        ? '<div><div class="big">' + num(s.km) + '<small>km</small></div><div class="eyebrow" style="margin-top:4px">Vzdálenost</div></div>'
+        : '<div><div class="big">' + num(s.volume/1000) + '<small>t</small></div><div class="eyebrow" style="margin-top:4px">Objem</div></div>') +
       '<div class="sep"></div>' +
       '<div><div class="big">' + Math.max(1, Math.round(done.durationS/60)) + '<small>min</small></div><div class="eyebrow" style="margin-top:4px">Čas</div></div>' +
       '<div class="sep"></div>' +
@@ -935,8 +970,9 @@ function renderProgress(){
   const prs = personalRecords(20);
   const box = document.getElementById('progbody');
   if (!prs.length){
-    box.innerHTML = '<div class="empty"><h3>Ještě není co měřit</h3>' +
-      '<p>Dokonči první trénink a začnou se tu kreslit křivky, objem a rekordy.</p></div>';
+    const cs = cardioSection();
+    box.innerHTML = cs || ('<div class="empty"><h3>Ještě není co měřit</h3>' +
+      '<p>Dokonči první trénink a začnou se tu kreslit křivky, objem a rekordy.</p></div>');
     return;
   }
   if (!progEx || !prs.some(p => p.id === progEx)) progEx = prs[0].id;
@@ -979,6 +1015,7 @@ function renderProgress(){
         '<u style="left:' + (lo/(hi*1.15))*100 + '%"></u></div></div>';
     }).join('') : '<div class="muted">Poslední týden bez tréninku.</div>') + '</div>' +
 
+    cardioSection() +
     '<div class="sec">Osobní rekordy</div>' +
     '<div class="card">' + prs.slice(0,6).map(p =>
       '<div class="pr"><span class="w">' + num(p.w) + ' kg</span><span class="nm">' + esc(p.name) + '</span><span class="axis">' + shortDate(p.date) + '</span></div>').join('') + '</div>' +
@@ -987,6 +1024,38 @@ function renderProgress(){
       '<div class="card" style="border-color:rgba(206,46,46,.45);background:rgba(206,46,46,.08)">' +
       '<h3 style="font-size:15px">Stagnace</h3><div class="muted" style="margin-top:6px;line-height:1.5">' +
       esc(stag.join(', ')) + ' — tři týdny beze změny. Zkus shodit na 85 % a najet znovu, nebo cvik posuň na začátek tréninku.</div></div>' : '');
+}
+
+/** Přehled běhů: týdenní kilometry, trend tempa a posledních pět záznamů. */
+function cardioSection(){
+  const runs = cardioLog(30);
+  if (!runs.length) return '';
+  const km = weeklyKm(8), mx = Math.max(1, ...km.map(x => x.value));
+  const withPace = runs.filter(r => r.dist > 0).slice(0, 6).reverse();
+  let trend = '';
+  if (withPace.length >= 2){
+    const first = pace(withPace[0]), last = pace(withPace[withPace.length-1]);
+    const better = last < first - 0.05;
+    const diff = Math.abs(last - first) * 60;
+    trend = '<span class="delta ' + (better ? '' : 'flat') + '">' + (better ? '▼' : '→') + ' ' +
+      Math.round(diff) + ' s/km</span>';
+  }
+  const total = km.reduce((a,x) => a + x.value, 0);
+
+  return '<div class="sec">Běhy</div><div class="card">' +
+    '<div style="display:flex;align-items:baseline">' +
+      '<div class="big" style="font-size:36px">' + num(total) + '<small>km</small></div>' + trend + '</div>' +
+    '<div class="muted" style="margin-top:5px">Za 8 týdnů · průměrné tempo ' + paceStr(runs[0]) + '</div>' +
+    '<div class="bars" style="margin-top:14px">' +
+      km.map((x,i) => '<div class="' + (i === km.length-1 ? 'hi' : '') + '" style="height:' +
+        Math.max(6, x.value/mx*100) + '%"></div>').join('') + '</div>' +
+    '<div style="margin-top:16px">' + runs.slice(0,5).map(r =>
+      '<div class="pr"><span class="w">' + num(r.dist) + ' km</span>' +
+      '<span class="nm">' + r.min + ' min · ' + paceStr(r) + (r.hr ? ' · ' + r.hr + ' tepů' : '') + '</span>' +
+      '<span class="axis">' + shortDate(r.date) + '</span></div>').join('') + '</div>' +
+    '<div class="muted" style="font-size:11.5px;margin-top:10px;line-height:1.5">' +
+      'Klesající tempo při stejném tepu znamená rostoucí kondici. Sleduj obojí spolu, samotný čas klame.</div>' +
+    '</div>';
 }
 
 function chartSVG(data){
@@ -1021,7 +1090,14 @@ function startWorkout(routineId, dateKey){
     const last = lastPerformance(re.exerciseId, session.id);
     const hint = last ? overloadHint(last.sets, re.sets, re.repHigh, last.top.weight) : null;
     const w = hint ? hint.next : (last ? last.top.weight : 0);
-    rows[re.id] = Array.from({length: re.sets}, () => ({weight: num(w), reps: String(re.repLow), done: false}));
+    if (exById(re.exerciseId).kind === 'cardio'){
+      const lr = last && last.sets[0];
+      rows[re.id] = Array.from({length: re.sets}, () => ({
+        dist: lr ? num(lr.dist||0) : '5', min: lr ? String(lr.min||30) : '30',
+        hr: lr ? String(lr.hr||'') : '', weight:'0', reps:'0', done:false}));
+    } else {
+      rows[re.id] = Array.from({length: re.sets}, () => ({weight: num(w), reps: String(re.repLow), done: false}));
+    }
   });
 
   document.getElementById('w-title').textContent = r.name;
@@ -1039,6 +1115,8 @@ const IC_KG = '<svg class="icon" viewBox="0 0 24 24"><path d="M9.5 6.5a2.5 2.5 0
 const IC_REP = '<svg class="icon" viewBox="0 0 24 24"><path d="M4 9V7.5A2.5 2.5 0 0 1 6.5 5H17"/><path d="M14 2.2 17.2 5 14 7.8"/><path d="M20 15v1.5a2.5 2.5 0 0 1-2.5 2.5H7"/><path d="M10 21.8 6.8 19 10 16.2"/></svg>';
 const IC_TIME = '<svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg>';
 const IC_CALC = '<svg class="icon" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8.5 7.5h7M8.5 12h1.5M14 12h1.5M8.5 16h1.5M14 16h1.5"/></svg>';
+const IC_DIST = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+const IC_HR = '<svg class="icon" viewBox="0 0 24 24"><path d="M20.4 5.6a5 5 0 0 0-7.1 0L12 6.9l-1.3-1.3a5 5 0 1 0-7.1 7.1L12 21l8.4-8.3a5 5 0 0 0 0-7.1z"/></svg>';
 const IC_CHECK = '<svg class="icon" viewBox="0 0 24 24"><path d="M5 12.5l5 5 9-11"/></svg>';
 const IC_UP = '<svg class="icon" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>';
 
@@ -1054,16 +1132,29 @@ function renderWorkout(r){
       (e.kind === 'weight' ? '<button class="iconbtn" onclick="openPlates(' + (parseFloat(String(w).replace(',','.')) || 60) + ')">' + IC_CALC + '</button>' : '') +
       '</div>' +
       (hint ? '<div class="hint">' + IC_UP + '<span>' + hint.text + '</span></div>' : '') +
-      '<div class="sgrid"><div class="shd"><span>#</span><span>Minule</span>' +
-        '<span class="ic">' + (e.kind === 'time' ? IC_TIME : IC_KG) + '</span><span class="ic">' + IC_REP + '</span><span></span></div>' +
-      rows[re.id].map((s,i) =>
-        '<div class="srow' + (s.done ? ' done' : '') + '" id="row-' + re.id + '-' + i + '">' +
-        '<span class="idx">' + (i+1) + '</span>' +
-        '<span class="last">' + (last && last.sets[i] ? num(last.sets[i].weight) + ' × ' + last.sets[i].reps : '—') + '</span>' +
-        '<input inputmode="decimal" value="' + s.weight + '" onchange="setVal(' + re.id + ',' + i + ',\'weight\',this.value)">' +
-        '<input inputmode="numeric" value="' + s.reps + '" onchange="setVal(' + re.id + ',' + i + ',\'reps\',this.value)">' +
-        '<button class="tick" onclick="tick(' + re.id + ',' + i + ',' + re.exerciseId + ',' + re.rest + ')">' + IC_CHECK + '</button>' +
-        '</div>').join('') +
+      (e.kind === 'cardio'
+        ? '<div class="sgrid"><div class="shd cardio"><span>#</span>' +
+            '<span class="ic">' + IC_DIST + '</span><span class="ic">' + IC_TIME + '</span><span class="ic">' + IC_HR + '</span><span></span></div>' +
+          rows[re.id].map((s,i) =>
+            '<div class="srow cardio' + (s.done ? ' done' : '') + '" id="row-' + re.id + '-' + i + '">' +
+            '<span class="idx">' + (i+1) + '</span>' +
+            '<input inputmode="decimal" value="' + s.dist + '" onchange="setVal(' + re.id + ',' + i + ',\'dist\',this.value)">' +
+            '<input inputmode="numeric" value="' + s.min + '" onchange="setVal(' + re.id + ',' + i + ',\'min\',this.value)">' +
+            '<input inputmode="numeric" placeholder="—" value="' + s.hr + '" onchange="setVal(' + re.id + ',' + i + ',\'hr\',this.value)">' +
+            '<button class="tick" onclick="tick(' + re.id + ',' + i + ',' + re.exerciseId + ',' + re.rest + ')">' + IC_CHECK + '</button>' +
+            '</div>').join('') +
+          (last && last.sets[0] ? '<div class="lastrun">Minule ' + num(last.sets[0].dist||0) + ' km za ' + (last.sets[0].min||0) + ' min' +
+            (last.sets[0].hr ? ' · ' + last.sets[0].hr + ' tepů' : '') + '</div>' : '')
+        : '<div class="sgrid"><div class="shd"><span>#</span><span>Minule</span>' +
+            '<span class="ic">' + (e.kind === 'time' ? IC_TIME : IC_KG) + '</span><span class="ic">' + IC_REP + '</span><span></span></div>' +
+          rows[re.id].map((s,i) =>
+            '<div class="srow' + (s.done ? ' done' : '') + '" id="row-' + re.id + '-' + i + '">' +
+            '<span class="idx">' + (i+1) + '</span>' +
+            '<span class="last">' + (last && last.sets[i] ? num(last.sets[i].weight) + ' × ' + last.sets[i].reps : '—') + '</span>' +
+            '<input inputmode="decimal" value="' + s.weight + '" onchange="setVal(' + re.id + ',' + i + ',\'weight\',this.value)">' +
+            '<input inputmode="numeric" value="' + s.reps + '" onchange="setVal(' + re.id + ',' + i + ',\'reps\',this.value)">' +
+            '<button class="tick" onclick="tick(' + re.id + ',' + i + ',' + re.exerciseId + ',' + re.rest + ')">' + IC_CHECK + '</button>' +
+            '</div>').join('')) +
       '</div></div>';
   }).join('') +
   '<div class="pad" style="padding-top:18px"><button class="btn" onclick="finishWorkout()">Dokončit trénink</button></div>';
@@ -1076,12 +1167,16 @@ function tick(reId, i, exerciseId, rest){
   s.done = !s.done;
   document.getElementById('row-' + reId + '-' + i).classList.toggle('done', s.done);
 
+  const ex = exById(exerciseId), isCardio = ex && ex.kind === 'cardio';
   const w = parseFloat(String(s.weight).replace(',','.')) || 0;
   const reps = parseInt(s.reps, 10) || 0;
   const idx = D.sessions.findIndex(x => x.id === session.id);
   session.logs = session.logs.filter(l => !(l.exerciseId === exerciseId && l.setIndex === i));
   if (s.done){
-    session.logs.push({exerciseId, setIndex:i, weight:w, reps});
+    if (isCardio) session.logs.push({exerciseId, setIndex:i, weight:0, reps:0,
+      dist: parseFloat(String(s.dist).replace(',','.')) || 0,
+      min: parseInt(s.min,10) || 0, hr: parseInt(s.hr,10) || 0});
+    else session.logs.push({exerciseId, setIndex:i, weight:w, reps});
     haptic(15);
     startRest(rest);
   }
@@ -1249,7 +1344,7 @@ function drawPostCard(g, s){
   g.fillText(sum.sets + ' sérií dokončeno', 60, 316);
 
   const stats = [
-    [num(sum.volume/1000), 't', 'Objem'],
+    sum.km > 0 ? [num(sum.km), 'km', 'Vzdálenost'] : [num(sum.volume/1000), 't', 'Objem'],
     [String(Math.max(1, Math.round(s.durationS/60))), 'min', 'Čas'],
     [String(sum.sets), '', 'Série']
   ];
