@@ -107,6 +107,21 @@
       "name": "HIIT / intervaly",
       "muscle": "Kardio",
       "kind": "cardio"
+    },
+    {
+      "name": "Přítahy na stroji s oporou hrudi",
+      "muscle": "Záda",
+      "kind": "weight"
+    },
+    {
+      "name": "Stahování horní kladky úzkým úchopem",
+      "muscle": "Záda",
+      "kind": "weight"
+    },
+    {
+      "name": "Shyby s dopomocí stroje",
+      "muscle": "Záda",
+      "kind": "weight"
     }
   ],
   "routines": [
@@ -170,18 +185,25 @@
       "color": "#2158CC",
       "exercises": [
         {
-          "name": "Shyby nadhmatem",
+          "name": "Stahování horní kladky",
           "sets": 4,
-          "repLow": 6,
+          "repLow": 8,
           "repHigh": 12,
           "rest": 150
         },
         {
-          "name": "Přítahy jednoruček v předklonu",
-          "sets": 3,
+          "name": "Přítahy na stroji s oporou hrudi",
+          "sets": 4,
           "repLow": 8,
           "repHigh": 12,
-          "rest": 120
+          "rest": 150
+        },
+        {
+          "name": "Veslování na kladce",
+          "sets": 3,
+          "repLow": 10,
+          "repHigh": 12,
+          "rest": 90
         },
         {
           "name": "Stahování s napjatýma rukama",
@@ -198,6 +220,13 @@
           "rest": 75
         },
         {
+          "name": "Shrugy",
+          "sets": 3,
+          "repLow": 12,
+          "repHigh": 15,
+          "rest": 75
+        },
+        {
           "name": "Bicepsový zdvih na šikmé lavici",
           "sets": 4,
           "repLow": 8,
@@ -210,6 +239,13 @@
           "repLow": 12,
           "repHigh": 15,
           "rest": 75
+        },
+        {
+          "name": "Shyby s dopomocí stroje",
+          "sets": 2,
+          "repLow": 6,
+          "repHigh": 10,
+          "rest": 120
         }
       ]
     },
