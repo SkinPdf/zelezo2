@@ -104,6 +104,10 @@ h3{font-family:var(--disp);font-weight:500;font-size:17px;text-transform:upperca
 .row{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid #232830;width:100%;text-align:left}
 .row .tag{width:3px;height:26px;border-radius:2px;flex:none}
 .row .n{flex:1;font-size:14.5px;min-width:0}
+.exitem{border-bottom:1px solid #232830}
+.exitem .row{border-bottom:none}
+.desc{display:none;padding:0 18px 14px 33px;font-size:13px;color:var(--muted);line-height:1.55}
+.desc.open{display:block}
 .badge{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--iron);background:var(--p15);padding:2px 5px;border-radius:3px;text-transform:uppercase}
 
 .planrow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);width:100%;text-align:left}
@@ -113,6 +117,8 @@ h3{font-family:var(--disp);font-weight:500;font-size:17px;text-transform:upperca
 
 .stepper{display:flex;align-items:center;margin-top:11px;gap:8px}
 .stepper .lbl{flex:1;color:var(--muted);font-size:13px}
+.exbtn{width:30px;height:30px;border:1px solid var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex:none}
+.exbtn .icon{width:15px;height:15px}
 .stepper button{width:32px;height:32px;border:1px solid var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:16px}
 .stepper .val{font-family:var(--mono);font-size:14px;min-width:60px;text-align:center}
 
@@ -121,6 +127,7 @@ h3{font-family:var(--disp);font-weight:500;font-size:17px;text-transform:upperca
 .field:focus{outline:none;border-color:var(--chalk)}
 .form{margin:10px 12px 0;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:15px;display:none}
 .form.on{display:block}
+.flabel{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;margin:14px 0 6px}
 .form label{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;margin:12px 0 6px}
 .form label:first-child{margin-top:0}
 
@@ -274,6 +281,8 @@ h3{font-family:var(--disp);font-weight:500;font-size:17px;text-transform:upperca
     <div class="wrapchips" id="f-muscle"></div>
     <label>Co se měří</label>
     <div class="wrapchips" id="f-kind"></div>
+    <label>Popis (nepovinné)</label>
+    <input class="field" id="f-desc" placeholder="Jak cvik provést">
     <button class="btn" style="margin-top:16px" onclick="addExercise()">Uložit cvik</button>
   </div>
   <div id="exlist" style="margin-top:14px"></div>
@@ -372,41 +381,90 @@ const Store = {
    VÝCHOZÍ DATA
    ================================================================ */
 const EXERCISES = [
-  ['Bench press','Prsa','weight'],['Bench press na šikmé lavici','Prsa','weight'],
-  ['Tlak s jednoručkami vleže','Prsa','weight'],['Rozpažky s jednoručkami','Prsa','weight'],
-  ['Peck deck','Prsa','weight'],['Kliky na bradlech','Prsa','body'],['Kliky','Prsa','body'],
-  ['Mrtvý tah','Záda','weight'],['Shyby nadhmatem','Záda','body'],['Shyby podhmatem','Záda','body'],
-  ['Přítahy v předklonu','Záda','weight'],['Přítahy jednoruček v předklonu','Záda','weight'],
-  ['Stahování horní kladky','Záda','weight'],['Veslování na kladce','Záda','weight'],['Shrugy','Záda','weight'],
-  ['Dřep s činkou','Nohy','weight'],['Přední dřep','Nohy','weight'],['Leg press','Nohy','weight'],
-  ['Rumunský mrtvý tah','Nohy','weight'],['Bulharský dřep','Nohy','weight'],['Výpady s jednoručkami','Nohy','weight'],
-  ['Předkopávání','Nohy','weight'],['Zakopávání','Nohy','weight'],['Výpony na lýtka','Nohy','weight'],
-  ['Tlak nad hlavu','Ramena','weight'],['Tlak s jednoručkami nad hlavu','Ramena','weight'],
-  ['Upažování s jednoručkami','Ramena','weight'],['Face pull','Ramena','weight'],['Rozpažování v předklonu','Ramena','weight'],
-  ['Bicepsový zdvih s velkou činkou','Biceps','weight'],['Kladivový zdvih','Biceps','weight'],['Zdvih na Scottově lavici','Biceps','weight'],
-  ['Tricepsové stahování kladky','Triceps','weight'],['Francouzský tlak','Triceps','weight'],['Kliky na lavici','Triceps','body'],
-  ['Prkno','Břicho','time'],['Zvedání nohou ve visu','Břicho','body'],['Kolečko na břicho','Břicho','body']
+  ["Bench press", "Prsa", "weight", "Leh na rovné lavici, osa dolů k hrudníku a nahoru. Lokty asi 45° od těla, lopatky stažené k sobě."],
+  ["Incline bench press", "Prsa", "weight", "Lavice nakloněná na 30°. Zatíží horní část prsou, která u většiny lidí zaostává."],
+  ["Dumbbell bench press", "Prsa", "weight", "Tlak jednoruček vleže na rovné lavici. Větší rozsah než s osou, dole nech prsa protáhnout."],
+  ["Incline dumbbell press", "Prsa", "weight", "Lavice na 30°, jednoručky z úrovně prsou nahoru. Dole je nech klesnout hluboko, až cítíš tah přes prsa."],
+  ["Machine chest press", "Prsa", "weight", "Sedačka s madly, tlačíš dopředu. Stroj tě vede, takže můžeš jít blíž k selhání bez rizika."],
+  ["Cable fly", "Prsa", "weight", "Stojíš mezi dvěma kladkami, ruce téměř natažené, přitahuješ je před sebe k sobě. Kladka drží napětí i v protažení."],
+  ["Dumbbell fly", "Prsa", "weight", "Vleže rozpažuješ jednoručky do stran s mírně pokrčenými lokty. Dole cítíš tah, nahoře nedávej ruce úplně k sobě."],
+  ["Pec deck", "Prsa", "weight", "Stroj vsedě, předloktí opřená o polstry, stlačuješ je k sobě. Nejjednodušší izolace na prsa."],
+  ["Chest dips", "Prsa", "body", "Na bradlech, trup nakloněný dopředu. Náklon přesouvá zátěž z tricepsu na prsa."],
+  ["Push-ups", "Prsa", "body", "Klasické kliky. Tělo drž v jedné přímce, lokty ne úplně do stran."],
+  ["Deadlift", "Záda", "weight", "Zvedáš osu ze země. Záda rovná, osa těsně u nohou, tah nohama i zády zároveň."],
+  ["Pull-ups", "Záda", "body", "Shyby nadhmatem. Táhni lokty dolů k bokům, ne rukama. Nahoře brada nad hrazdu."],
+  ["Chin-ups", "Záda", "body", "Shyby podhmatem, ruce na šířku ramen. Víc zapojí biceps než nadhmat."],
+  ["Assisted pull-ups", "Záda", "weight", "Shyby na stroji s protiváhou. Radši méně opakování s menší dopomocí než hodně lehkých."],
+  ["Lat pulldown", "Záda", "weight", "Vsedě taháš hrazdu shora k hrudníku. Hlavní svislý tah, staví šířku zad."],
+  ["Close-grip lat pulldown", "Záda", "weight", "Stahování horní kladky úzkým úchopem s dlaněmi proti sobě. Loket jde těsněji podél těla."],
+  ["Single-arm lat pulldown", "Záda", "weight", "Vkleče bokem ke kladce, ruku nech nahoře úplně vytáhnout včetně ramene, pak táhni loktem dolů k boku. Slabší stranu první."],
+  ["Straight-arm pulldown", "Záda", "weight", "Čelem k vysoké kladce, ruce zůstávají natažené a taháš je obloukem k stehnům. Lokty se neohýbají, vypadne tím biceps."],
+  ["Barbell row", "Záda", "weight", "Předklon asi 45°, taháš osu k pupku. Záda drž rovná, netrhej trupem."],
+  ["Dumbbell row", "Záda", "weight", "Jednoručka, koleno a ruka opřené o lavici. Táhni loktem dozadu podél těla."],
+  ["Chest-supported row", "Záda", "weight", "Přítahy na stroji s hrudníkem opřeným o polstr. Opěrka vyřadí spodní záda a kyčle, takže se nemáš čím podvádět."],
+  ["Seated cable row", "Záda", "weight", "Vsedě, nohy opřené, taháš k pupku. Nahoře nech ramena vytáhnout dopředu, dole stlač lopatky."],
+  ["Shrugs", "Záda", "weight", "Zvedáš ramena přímo nahoru k uším, netoč jimi dokola. Nahoře drž vteřinu, dolů pomalu."],
+  ["Back squat", "Nohy", "weight", "Dřep s osou na zádech. Kolena ven, hloubka aspoň do paralely."],
+  ["Front squat", "Nohy", "weight", "Osa vpředu na ramenou. Vzpřímenější trup, víc kvadricepsy."],
+  ["Leg press", "Nohy", "weight", "Tlak nohama na stroji. Koleno nepropínej úplně, chodidla na šířku boků."],
+  ["Romanian deadlift", "Nohy", "weight", "Nohy skoro napnuté, zadek dozadu, osa klouže po stehnech dolů. Cítit to musíš vzadu na stehnech."],
+  ["Hip thrust", "Nohy", "weight", "Zády opřený o lavici, osa přes boky, zvedáš pánev nahoru. Bradu zastrč, nahoře pauza vteřinu."],
+  ["Walking lunges", "Nohy", "weight", "Chodící výpady s jednoručkami. Dlouhý krok a trup mírně nakloněný dopředu zapojí víc zadek než kvadricepsy."],
+  ["Bulgarian split squat", "Nohy", "weight", "Zadní noha na lavici, dřep na přední. Brutální na rovnováhu i na zadek."],
+  ["Dumbbell lunges", "Nohy", "weight", "Výpady na místě s jednoručkami. Koleno zadní nohy skoro k zemi."],
+  ["Leg extension", "Nohy", "weight", "Předkopávání vsedě na stroji. Izolace na kvadricepsy."],
+  ["Leg curl", "Nohy", "weight", "Zakopávání na stroji. Izolace na zadní stranu stehna."],
+  ["Cable kickback", "Nohy", "weight", "Zanožování na spodní kladce, jedna noha. Izolace na hýždě."],
+  ["Calf raise", "Nohy", "weight", "Výpony na lýtka. Dole nech patu klesnout pod úroveň špičky, nahoře výdrž."],
+  ["Overhead press", "Ramena", "weight", "Tlak osy nad hlavu ve stoje. Zadek a břicho zpevněné, osa jde těsně kolem obličeje."],
+  ["Dumbbell shoulder press", "Ramena", "weight", "Vsedě s opěrkou, jednoručky z úrovně ramen nahoru. Přední hlava ramen."],
+  ["Cable lateral raise", "Ramena", "weight", "Jednou rukou, kladka nastavená dole, ruka jde od těla do strany. Kabel drží napětí i nahoře, na rozdíl od jednoručky."],
+  ["Dumbbell lateral raise", "Ramena", "weight", "Upažování s jednoručkami do stran. Nech váhu nízkou, ať práci nepřebere trapéz."],
+  ["Face pull", "Ramena", "weight", "Kladka ve výšce obličeje, taháš k čelu a rozpažuješ. Zadní delty a střední trapéz."],
+  ["Rear delt fly", "Ramena", "weight", "Rozpažování v předklonu. Malá váha, cítit to musíš vzadu na ramenou."],
+  ["Barbell curl", "Biceps", "weight", "Bicepsový zdvih s velkou činkou ve stoje. Lokty u těla, netrhej zády."],
+  ["Incline dumbbell curl", "Biceps", "weight", "Vsedě na lavici nakloněné dozadu, ruce visí za tělem. Biceps se protáhne víc než ve stoje."],
+  ["Hammer curl", "Biceps", "weight", "Kladivový zdvih, dlaně proti sobě. Zabírá i brachialis a předloktí."],
+  ["Preacher curl", "Biceps", "weight", "Zdvih na Scottově lavici. Paže opřené, žádné švihání."],
+  ["Overhead cable extension", "Triceps", "weight", "Ruce nad hlavou, spouštíš zátěž za hlavu a narovnáváš lokty. Jediná poloha, kde se protáhne dlouhá hlava tricepsu."],
+  ["Triceps pushdown", "Triceps", "weight", "Kladka nahoře, lokty u těla, tlačíš dolů. Doplněk k extenzi nad hlavou."],
+  ["Skull crusher", "Triceps", "weight", "Vleže spouštíš osu k čelu a narovnáváš lokty. Lokty drž na místě."],
+  ["Bench dips", "Triceps", "body", "Ruce za sebou na lavici, spouštíš se dolů. Snadné na doplnění objemu."],
+  ["Wrist curl", "Předloktí", "weight", "Předloktí opřená, zvedáš zátěž jen zápěstím. Flexory předloktí."],
+  ["Reverse curl", "Předloktí", "weight", "Zdvih nadhmatem. Zabírá brachioradialis a extenzory předloktí."],
+  ["Farmer's walk", "Předloktí", "time", "Chůze s těžkými jednoručkami. Grip, trapézy a střed těla najednou."],
+  ["Neck flexion", "Krk", "weight", "Leh na lavici hlavou přes okraj, kotouč na čele přes ručník, přitahuješ bradu k hrudi. Pomalu, bez švihu."],
+  ["Neck extension", "Krk", "weight", "Opačný směr — vleže na břiše nebo v postroji zakláníš hlavu proti odporu. Dvě vteřiny v obou krajních polohách."],
+  ["Lateral neck flexion", "Krk", "weight", "Úklon hlavy do strany proti odporu. Třetí směr, volitelný."],
+  ["Cable crunch", "Břicho", "weight", "Vkleče zády ke kladce, lano za hlavou, ohýbáš páteř dolů. Ohýbáš záda, není to cvik na kyčle."],
+  ["Hanging leg raise", "Břicho", "body", "Ve visu zvedáš nohy. Podsazuj pánev, ne jen zvedej nohy z kyčlí."],
+  ["Ab wheel rollout", "Břicho", "body", "Kolečko na břicho. Progrese přes rozsah: nejdřív z kleku po nos, pak dál, nakonec ze stoje."],
+  ["Plank", "Břicho", "time", "Prkno. Tělo v přímce, zadek nahoru ani dolů."],
+  ["Pallof press", "Břicho", "weight", "Bokem ke kladce, ruce tlačíš před sebe a bráníš rotaci trupu. Anti-rotační práce."],
+  ["Easy run", "Kardio", "cardio", "Lehký běh v konverzačním tempu, 140–155 tepů. Musíš u toho zvládnout mluvit ve větách."],
+  ["Tempo run", "Kardio", "cardio", "Tempový běh, 165–175 tepů. Jedna tvrdá jednotka týdně stačí."],
+  ["HIIT intervals", "Kardio", "cardio", "Intervaly na kole, veslu nebo pásu. Například 8× 30 s tvrdě / 90 s lehce."],
 ];
 
 const TEMPLATES = [
   {name:'Push',color:'#CE2E2E',desc:'Prsa, ramena, triceps',ex:[
-    ['Bench press',4,6,8,180],['Tlak nad hlavu',3,8,10,150],['Bench press na šikmé lavici',3,8,12,120],
-    ['Rozpažky s jednoručkami',3,12,15,90],['Tricepsové stahování kladky',3,12,15,90]]},
+    ['Bench press',4,6,8,180],['Overhead press',3,8,10,150],['Incline bench press',3,8,12,120],
+    ['Dumbbell fly',3,12,15,90],['Triceps pushdown',3,12,15,90]]},
   {name:'Pull',color:'#2158CC',desc:'Záda, biceps',ex:[
-    ['Mrtvý tah',3,5,5,240],['Shyby nadhmatem',4,6,10,180],['Přítahy v předklonu',3,8,10,150],
-    ['Veslování na kladce',3,10,12,120],['Bicepsový zdvih s velkou činkou',3,10,12,90]]},
+    ['Deadlift',3,5,5,240],['Pull-ups',4,6,10,180],['Barbell row',3,8,10,150],
+    ['Seated cable row',3,10,12,120],['Barbell curl',3,10,12,90]]},
   {name:'Nohy',color:'#1E8A4C',desc:'Kvadricepsy, hamstringy, lýtka',ex:[
-    ['Dřep s činkou',4,5,5,240],['Rumunský mrtvý tah',3,8,10,150],['Leg press',3,10,12,150],
-    ['Zakopávání',3,12,15,90],['Výpony na lýtka',4,12,15,60]]},
+    ['Back squat',4,5,5,240],['Romanian deadlift',3,8,10,150],['Leg press',3,10,12,150],
+    ['Leg curl',3,12,15,90],['Calf raise',4,12,15,60]]},
   {name:'Upper',color:'#E5B72A',desc:'Celé horní tělo',ex:[
-    ['Bench press',4,6,8,180],['Přítahy v předklonu',4,6,8,180],['Tlak s jednoručkami nad hlavu',3,8,12,120],
-    ['Stahování horní kladky',3,8,12,120],['Bicepsový zdvih s velkou činkou',3,10,12,90],['Tricepsové stahování kladky',3,10,12,90]]},
+    ['Bench press',4,6,8,180],['Barbell row',4,6,8,180],['Dumbbell shoulder press',3,8,12,120],
+    ['Lat pulldown',3,8,12,120],['Barbell curl',3,10,12,90],['Triceps pushdown',3,10,12,90]]},
   {name:'Lower',color:'#8B5CF6',desc:'Celé dolní tělo',ex:[
-    ['Dřep s činkou',4,5,6,240],['Rumunský mrtvý tah',3,8,10,150],['Bulharský dřep',3,10,12,120],
-    ['Předkopávání',3,12,15,90],['Výpony na lýtka',4,12,15,60],['Prkno',3,45,60,60]]},
+    ['Back squat',4,5,6,240],['Romanian deadlift',3,8,10,150],['Bulgarian split squat',3,10,12,120],
+    ['Leg extension',3,12,15,90],['Calf raise',4,12,15,60],['Plank',3,45,60,60]]},
   {name:'Full body',color:'#EC6F2A',desc:'Pro start, 3× týdně',ex:[
-    ['Dřep s činkou',3,5,5,180],['Bench press',3,5,5,180],['Přítahy v předklonu',3,5,5,180],
-    ['Tlak nad hlavu',3,8,10,120],['Prkno',3,30,45,60]]}
+    ['Back squat',3,5,5,180],['Bench press',3,5,5,180],['Barbell row',3,5,5,180],
+    ['Overhead press',3,8,10,120],['Plank',3,30,45,60]]}
 ];
 
 const MUSCLE_COLOR = {Prsa:'#CE2E2E','Záda':'#2158CC',Nohy:'#1E8A4C',Ramena:'#E5B72A',
@@ -428,7 +486,7 @@ function initDB(){
   D = Store.read();
   if (D && D.version === 1) return;
   D = {version:1, seq:0, exercises:[], routines:[], weeklyPlan:{}, overrides:{}, sessions:[]};
-  EXERCISES.forEach(([name,muscle,kind]) => D.exercises.push({id:uid(),name,muscle,kind,custom:false}));
+  EXERCISES.forEach(([name,muscle,kind,desc]) => D.exercises.push({id:uid(),name,muscle,kind,desc,custom:false}));
   TEMPLATES.slice(0,3).forEach(t => addTemplate(t, true));
   const ids = D.routines.map(r => r.id);
   [1,3,5].forEach((dow,i) => { if (ids[i]) D.weeklyPlan[dow] = ids[i]; });
@@ -820,8 +878,11 @@ function renderEditor(){
   const rows = r.exercises.map(re => {
     const e = exById(re.exerciseId);
     return '<div class="card"><div class="stripe" style="background:' + (e ? mcol(e.muscle) : '#666') + '"></div>' +
-      '<div style="display:flex;align-items:center;gap:10px"><h3 style="flex:1;min-width:0">' + esc(e ? e.name : '?') + '</h3>' +
-      '<button onclick="delRoutineEx(' + re.id + ')" style="color:var(--dim)"><svg class="icon" style="width:18px;height:18px" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
+      '<div style="display:flex;align-items:center;gap:6px"><h3 style="flex:1;min-width:0">' + esc(e ? e.name : '?') + '</h3>' +
+      '<button class="exbtn" onclick="moveEx(' + re.id + ',-1)" aria-label="Nahoru"><svg class="icon" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>' +
+      '<button class="exbtn" onclick="moveEx(' + re.id + ',1)" aria-label="Dolů"><svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg></button>' +
+      '<button class="exbtn" onclick="swapEx(' + re.id + ')" aria-label="Vyměnit"><svg class="icon" viewBox="0 0 24 24"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg></button>' +
+      '<button class="exbtn" onclick="delRoutineEx(' + re.id + ')" aria-label="Odebrat"><svg class="icon" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
       stepper('Série', re.sets, 're', re.id, 'sets') +
       stepper('Opakování', re.repLow === re.repHigh ? re.repLow : re.repLow + '–' + re.repHigh, 're', re.id, 'reps') +
       stepper('Pauza', re.rest + ' s', 're', re.id, 'rest') + '</div>';
@@ -858,6 +919,19 @@ function bump(reId, field, dir){
 }
 function renameRoutine(v){ routineById(editId).name = v.trim() || 'Rutina'; save(); renderRoutines(); }
 function recolor(c){ routineById(editId).color = c; save(); renderEditor(); renderRoutines(); }
+/** Posune cvik v rutině nahoru nebo dolů. */
+function moveEx(reId, dir){
+  const list = routineById(editId).exercises;
+  const i = list.findIndex(x => x.id === reId), j = i + dir;
+  if (i < 0 || j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];
+  save(); renderEditor(); haptic(8);
+}
+
+/** Vymění cvik za jiný, ale nechá série, opakování i pauzu. */
+let swapTarget = null;
+function swapEx(reId){ swapTarget = reId; pickExerciseFor(); }
+
 function delRoutineEx(reId){
   const r = routineById(editId);
   r.exercises = r.exercises.filter(x => x.id !== reId);
@@ -875,7 +949,7 @@ function closePush(){ document.getElementById('push').classList.remove('on'); re
 /* ---------- výběr cviku do rutiny ---------- */
 let pickFilter = 'Vše';
 function pickExerciseFor(){
-  openModal('<h2 style="font-size:20px">Přidat cvik</h2>' +
+  openModal('<h2 style="font-size:20px">' + (swapTarget ? 'Vyměnit za' : 'Přidat cvik') + '</h2>' +
     '<input class="field" id="p-search" placeholder="Hledat" style="margin-top:12px" oninput="renderPickList()">' +
     '<div class="wrapchips" id="p-chips"></div>' +
     '<div id="p-list" style="margin-top:10px;max-height:46vh;overflow-y:auto"></div>' +
@@ -897,9 +971,15 @@ function renderPickList(){
 }
 function addExToRoutine(exId){
   const e = exById(exId), r = routineById(editId);
-  r.exercises.push({id:uid(), exerciseId:exId, sets:3,
-    repLow: e.kind === 'time' ? 30 : 8, repHigh: e.kind === 'time' ? 45 : 12,
-    rest: e.kind === 'time' ? 60 : 120});
+  if (swapTarget){
+    const slot = r.exercises.find(x => x.id === swapTarget);
+    if (slot) slot.exerciseId = exId;
+    swapTarget = null;
+  } else {
+    r.exercises.push({id:uid(), exerciseId:exId, sets:3,
+      repLow: e.kind === 'time' ? 30 : 8, repHigh: e.kind === 'time' ? 45 : 12,
+      rest: e.kind === 'time' ? 60 : 120});
+  }
   save(); closeModal(); renderEditor();
 }
 
@@ -923,11 +1003,78 @@ function renderExercises(){
     .sort((a,b) => (b.custom - a.custom) || a.name.localeCompare(b.name, 'cs'));
 
   document.getElementById('exlist').innerHTML = list.map(e =>
-    '<div class="row" oncontextmenu="return false" ontouchstart="holdStart(' + e.id + ')" ontouchend="holdEnd()" ontouchmove="holdEnd()">' +
-    '<span class="tag" style="background:' + mcol(e.muscle) + '"></span>' +
-    '<span class="n">' + esc(e.name) + '</span>' +
-    (e.custom ? '<span class="badge">vlastní</span>' : '') +
-    '<span class="eyebrow">' + e.muscle + '</span></div>').join('');
+    '<div class="exitem">' +
+      '<div class="row" onclick="toggleDesc(' + e.id + ')" oncontextmenu="return false"' +
+      ' ontouchstart="holdStart(' + e.id + ')" ontouchend="holdEnd()" ontouchmove="holdEnd()">' +
+      '<span class="tag" style="background:' + mcol(e.muscle) + '"></span>' +
+      '<span class="n">' + esc(e.name) + '</span>' +
+      (e.custom ? '<span class="badge">vlastní</span>' : '') +
+      '<span class="eyebrow">' + e.muscle + '</span>' +
+      '<svg class="icon chev" style="width:15px;height:15px;color:var(--dim);margin-left:8px" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>' +
+      '</div>' +
+      '<div class="desc" id="desc-' + e.id + '">' + (e.desc ? esc(e.desc) : '<i style="color:var(--dim)">Bez popisu</i>') +
+        '<button class="btn ghost" style="margin-top:10px;padding:9px" onclick="event.stopPropagation();openExEdit(' + e.id + ')">Upravit cvik</button></div>' +
+    '</div>').join('');
+}
+
+let edEx = null;
+/** Úprava cviku v knihovně — název, partie, typ i popis. */
+function openExEdit(id){
+  const e = exById(id);
+  if (!e) return;
+  edEx = {id, muscle:e.muscle, kind:e.kind};
+  renderExEdit();
+}
+function renderExEdit(){
+  const e = exById(edEx.id);
+  const used = D.routines.filter(r => r.exercises.some(x => x.exerciseId === e.id)).map(r => r.name);
+  const logged = D.sessions.some(s => s.logs.some(l => l.exerciseId === e.id));
+  openModal('<h2 style="font-size:20px">Upravit cvik</h2>' +
+    '<label class="flabel">Název</label>' +
+    '<input class="field" id="e-name" value="' + esc(e.name) + '">' +
+    '<label class="flabel">Svalová partie</label>' +
+    '<div class="wrapchips">' + muscles().map(m =>
+      '<button class="chip ' + (m === edEx.muscle ? 'on' : '') + '" onclick="edEx.muscle=\'' + m + '\';keepName();renderExEdit()">' + m + '</button>').join('') + '</div>' +
+    '<label class="flabel">Co se měří</label>' +
+    '<div class="wrapchips">' + Object.keys(KINDS).map(k =>
+      '<button class="chip ' + (k === edEx.kind ? 'on' : '') + '" onclick="edEx.kind=\'' + k + '\';keepName();renderExEdit()">' + KINDS[k] + '</button>').join('') + '</div>' +
+    '<label class="flabel">Popis</label>' +
+    '<input class="field" id="e-desc" value="' + esc(e.desc || '') + '" placeholder="Jak cvik provést">' +
+    (used.length ? '<div class="muted" style="margin-top:12px;font-size:12px">Použitý v rutinách: ' + esc(used.join(', ')) + '</div>' : '') +
+    '<button class="btn" style="margin-top:16px" onclick="saveExEdit()">Uložit</button>' +
+    (used.length || logged
+      ? '<div class="muted" style="margin-top:10px;font-size:11.5px;text-align:center">Smazat nejde — ' +
+        (used.length ? 'je v rutině' : 'má odcvičenou historii') + '</div>'
+      : '<button class="btn danger gap" onclick="delExercise(' + e.id + ')">Smazat cvik</button>') +
+    '<button class="btn ghost gap" onclick="closeModal()">Zavřít</button>');
+  // po překreslení chipů se input vyprázdní, proto si držíme rozepsaný text
+  if (edEx.draftName != null) document.getElementById('e-name').value = edEx.draftName;
+  if (edEx.draftDesc != null) document.getElementById('e-desc').value = edEx.draftDesc;
+}
+function keepName(){
+  const n = document.getElementById('e-name'), d = document.getElementById('e-desc');
+  if (n) edEx.draftName = n.value;
+  if (d) edEx.draftDesc = d.value;
+}
+function saveExEdit(){
+  const e = exById(edEx.id);
+  const name = document.getElementById('e-name').value.trim();
+  if (!name) return toast('Název nesmí být prázdný');
+  if (D.exercises.some(x => x.id !== e.id && x.name.toLowerCase() === name.toLowerCase()))
+    return toast('Cvik s tímhle názvem už existuje');
+  e.name = name;
+  e.desc = document.getElementById('e-desc').value.trim();
+  e.muscle = edEx.muscle;
+  e.kind = edEx.kind;
+  e.edited = true;          // aby import balíčku úpravu nepřepsal
+  edEx = null;
+  save(); closeModal(); renderExercises(); renderRoutines(); renderCalendar();
+  toast('Uloženo');
+}
+
+function toggleDesc(id){
+  const el = document.getElementById('desc-' + id);
+  if (el) el.classList.toggle('open');
 }
 
 let holdT;
@@ -945,20 +1092,24 @@ function addExercise(){
   if (!name) return;
   if (D.exercises.some(e => e.name.toLowerCase() === name.toLowerCase()))
     return toast('Cvik s tímhle názvem už existuje.');
-  D.exercises.push({id:uid(), name, muscle:formMuscle, kind:formKind, custom:true});
+  D.exercises.push({id:uid(), name, muscle:formMuscle, kind:formKind,
+    desc: document.getElementById('f-desc').value.trim(), custom:true});
   save();
   document.getElementById('f-name').value = '';
+  document.getElementById('f-desc').value = '';
   toggleExForm(); exFilter = 'Vše'; renderExercises();
   toast('Cvik přidán');
 }
 function delExercise(id){
   const e = exById(id);
-  if (!e || !e.custom) return;
+  if (!e) return;
   const used = D.routines.some(r => r.exercises.some(x => x.exerciseId === id));
   if (used) return toast('Cvik je použitý v rutině.');
+  if (D.sessions.some(s => s.logs.some(l => l.exerciseId === id)))
+    return toast('Cvik má odcvičenou historii.');
   if (!confirm('Smazat cvik „' + e.name + '"?')) return;
   D.exercises = D.exercises.filter(x => x.id !== id);
-  save(); renderExercises();
+  save(); closeModal(); renderExercises();
 }
 
 /* ================================================================
@@ -1249,7 +1400,7 @@ function drawPlates(){
 function stepPlates(d){ calcW = Math.max(20, calcW + d); drawPlates(); }
 
 function openModal(html){ document.getElementById('modal-body').innerHTML = html; document.getElementById('modal').classList.add('on'); }
-function closeModal(){ document.getElementById('modal').classList.remove('on'); }
+function closeModal(){ swapTarget = null; document.getElementById('modal').classList.remove('on'); }
 
 /* ================================================================
    SDÍLECÍ KARTY — kreslené na canvas, takže vzniká skutečný PNG
@@ -1476,10 +1627,21 @@ function mergePack(pack){
   const byName = {};
   D.exercises.forEach(e => byName[e.name.toLowerCase()] = e);
 
+  let renamed = 0;
   (pack.exercises || []).forEach(pe => {
-    const hit = byName[pe.name.toLowerCase()];
-    if (hit) return;
-    const e = {id:uid(), name:pe.name, muscle:pe.muscle, kind:pe.kind || 'weight', custom:false};
+    // Cvik už může existovat pod starým názvem — pak ho jen přejmenujeme,
+    // aby se neztratila odcvičená historie.
+    let hit = byName[pe.name.toLowerCase()];
+    if (!hit && pe.alias) hit = byName[pe.alias.toLowerCase()];
+    if (hit){
+      if (hit.edited){ byName[hit.name.toLowerCase()] = hit; return; }
+      if (hit.name !== pe.name){ delete byName[hit.name.toLowerCase()]; hit.name = pe.name; renamed++; }
+      if (pe.desc) hit.desc = pe.desc;
+      if (pe.muscle) hit.muscle = pe.muscle;
+      byName[hit.name.toLowerCase()] = hit;
+      return;
+    }
+    const e = {id:uid(), name:pe.name, muscle:pe.muscle, kind:pe.kind || 'weight', desc:pe.desc || '', custom:false};
     D.exercises.push(e); byName[e.name.toLowerCase()] = e; newEx++;
   });
 
@@ -1505,7 +1667,7 @@ function mergePack(pack){
   }
 
   save(); closeModal(); jumpToday(); go('rut');
-  toast('Přidáno: ' + newRt + ' rutin, ' + newEx + ' cviků');
+  toast('Přidáno: ' + newRt + ' rutin, ' + newEx + ' cviků' + (renamed ? ', přejmenováno ' + renamed : ''));
 }
 function resetAll(){
   if (!confirm('Opravdu smazat všechno?\nRutiny, cviky i celou historii tréninků.')) return;
