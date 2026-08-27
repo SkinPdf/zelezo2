@@ -1,178 +1,310 @@
 {
   "type": "zelezo-pack",
-  "name": "4 dny v posilovně + 3 běhy",
+  "name": "Upper body priority — 4 dny v posilovně + 3 běhy",
   "note": "Po/St lehký běh 140–155 tepů, Pá tvrdý. Út nohy/core/krk/předloktí, Čt pump, So push, Ne pull. Běhy se zapisují jako km, čas a tep.",
   "exercises": [
     {
-      "name": "Tlak s jednoručkami na šikmé lavici",
+      "name": "Incline dumbbell press",
       "muscle": "Prsa",
-      "kind": "weight"
+      "kind": "weight",
+      "desc": "Lavice na 30°, jednoručky z úrovně prsou nahoru. Dole je nech klesnout hluboko, až cítíš tah přes prsa.",
+      "alias": "Tlak s jednoručkami na šikmé lavici"
     },
     {
-      "name": "Upažování na kladce",
-      "muscle": "Ramena",
-      "kind": "weight"
+      "name": "Machine chest press",
+      "muscle": "Prsa",
+      "kind": "weight",
+      "desc": "Sedačka s madly, tlačíš dopředu. Stroj tě vede, takže můžeš jít blíž k selhání bez rizika.",
+      "alias": "Tlak na stroji"
     },
     {
-      "name": "Tricepsové extenze nad hlavu",
-      "muscle": "Triceps",
-      "kind": "weight"
+      "name": "Cable fly",
+      "muscle": "Prsa",
+      "kind": "weight",
+      "desc": "Stojíš mezi dvěma kladkami, ruce téměř natažené, přitahuješ je před sebe k sobě. Kladka drží napětí i v protažení.",
+      "alias": "Rozpažování na kladce"
     },
     {
-      "name": "Stahování s napjatýma rukama",
+      "name": "Pec deck",
+      "muscle": "Prsa",
+      "kind": "weight",
+      "desc": "Stroj vsedě, předloktí opřená o polstry, stlačuješ je k sobě. Nejjednodušší izolace na prsa.",
+      "alias": "Peck deck"
+    },
+    {
+      "name": "Assisted pull-ups",
       "muscle": "Záda",
-      "kind": "weight"
+      "kind": "weight",
+      "desc": "Shyby na stroji s protiváhou. Radši méně opakování s menší dopomocí než hodně lehkých.",
+      "alias": "Shyby s dopomocí stroje"
     },
     {
-      "name": "Bicepsový zdvih na šikmé lavici",
-      "muscle": "Biceps",
-      "kind": "weight"
+      "name": "Lat pulldown",
+      "muscle": "Záda",
+      "kind": "weight",
+      "desc": "Vsedě taháš hrazdu shora k hrudníku. Hlavní svislý tah, staví šířku zad.",
+      "alias": "Stahování horní kladky"
     },
     {
-      "name": "Zdvih zápěstí",
-      "muscle": "Předloktí",
-      "kind": "weight"
+      "name": "Close-grip lat pulldown",
+      "muscle": "Záda",
+      "kind": "weight",
+      "desc": "Stahování horní kladky úzkým úchopem s dlaněmi proti sobě. Loket jde těsněji podél těla.",
+      "alias": "Stahování horní kladky úzkým úchopem"
     },
     {
-      "name": "Obrácený zdvih",
-      "muscle": "Předloktí",
-      "kind": "weight"
+      "name": "Single-arm lat pulldown",
+      "muscle": "Záda",
+      "kind": "weight",
+      "desc": "Vkleče bokem ke kladce, ruku nech nahoře úplně vytáhnout včetně ramene, pak táhni loktem dolů k boku. Slabší stranu první.",
+      "alias": "Jednoruční stahování kladky"
     },
     {
-      "name": "Farmářská chůze",
-      "muscle": "Předloktí",
-      "kind": "time"
+      "name": "Straight-arm pulldown",
+      "muscle": "Záda",
+      "kind": "weight",
+      "desc": "Čelem k vysoké kladce, ruce zůstávají natažené a taháš je obloukem k stehnům. Lokty se neohýbají, vypadne tím biceps.",
+      "alias": "Stahování s napjatýma rukama"
     },
     {
-      "name": "Flexe krku s kotoučem",
-      "muscle": "Krk",
-      "kind": "weight"
+      "name": "Chest-supported row",
+      "muscle": "Záda",
+      "kind": "weight",
+      "desc": "Přítahy na stroji s hrudníkem opřeným o polstr. Opěrka vyřadí spodní záda a kyčle, takže se nemáš čím podvádět.",
+      "alias": "Přítahy na stroji s oporou hrudi"
     },
     {
-      "name": "Extenze krku s postrojem",
-      "muscle": "Krk",
-      "kind": "weight"
+      "name": "Seated cable row",
+      "muscle": "Záda",
+      "kind": "weight",
+      "desc": "Vsedě, nohy opřené, taháš k pupku. Nahoře nech ramena vytáhnout dopředu, dole stlač lopatky.",
+      "alias": "Veslování na kladce"
     },
     {
-      "name": "Boční flexe krku",
-      "muscle": "Krk",
-      "kind": "weight"
+      "name": "Shrugs",
+      "muscle": "Záda",
+      "kind": "weight",
+      "desc": "Zvedáš ramena přímo nahoru k uším, netoč jimi dokola. Nahoře drž vteřinu, dolů pomalu.",
+      "alias": "Shrugy"
+    },
+    {
+      "name": "Romanian deadlift",
+      "muscle": "Nohy",
+      "kind": "weight",
+      "desc": "Nohy skoro napnuté, zadek dozadu, osa klouže po stehnech dolů. Cítit to musíš vzadu na stehnech.",
+      "alias": "Rumunský mrtvý tah"
     },
     {
       "name": "Hip thrust",
       "muscle": "Nohy",
-      "kind": "weight"
+      "kind": "weight",
+      "desc": "Zády opřený o lavici, osa přes boky, zvedáš pánev nahoru. Bradu zastrč, nahoře pauza vteřinu.",
+      "alias": "Hip thrust"
     },
     {
-      "name": "Chodící výpady s jednoručkami",
+      "name": "Walking lunges",
       "muscle": "Nohy",
-      "kind": "weight"
+      "kind": "weight",
+      "desc": "Chodící výpady s jednoručkami. Dlouhý krok a trup mírně nakloněný dopředu zapojí víc zadek než kvadricepsy.",
+      "alias": "Chodící výpady s jednoručkami"
     },
     {
-      "name": "Zanožování na kladce",
+      "name": "Cable kickback",
       "muscle": "Nohy",
-      "kind": "weight"
+      "kind": "weight",
+      "desc": "Zanožování na spodní kladce, jedna noha. Izolace na hýždě.",
+      "alias": "Zanožování na kladce"
     },
     {
-      "name": "Přítahy kolen na kladce vkleče",
+      "name": "Calf raise",
+      "muscle": "Nohy",
+      "kind": "weight",
+      "desc": "Výpony na lýtka. Dole nech patu klesnout pod úroveň špičky, nahoře výdrž.",
+      "alias": "Výpony na lýtka"
+    },
+    {
+      "name": "Dumbbell shoulder press",
+      "muscle": "Ramena",
+      "kind": "weight",
+      "desc": "Vsedě s opěrkou, jednoručky z úrovně ramen nahoru. Přední hlava ramen.",
+      "alias": "Tlak s jednoručkami nad hlavu"
+    },
+    {
+      "name": "Cable lateral raise",
+      "muscle": "Ramena",
+      "kind": "weight",
+      "desc": "Jednou rukou, kladka nastavená dole, ruka jde od těla do strany. Kabel drží napětí i nahoře, na rozdíl od jednoručky.",
+      "alias": "Upažování na kladce"
+    },
+    {
+      "name": "Face pull",
+      "muscle": "Ramena",
+      "kind": "weight",
+      "desc": "Kladka ve výšce obličeje, taháš k čelu a rozpažuješ. Zadní delty a střední trapéz.",
+      "alias": "Face pull"
+    },
+    {
+      "name": "Incline dumbbell curl",
+      "muscle": "Biceps",
+      "kind": "weight",
+      "desc": "Vsedě na lavici nakloněné dozadu, ruce visí za tělem. Biceps se protáhne víc než ve stoje.",
+      "alias": "Bicepsový zdvih na šikmé lavici"
+    },
+    {
+      "name": "Hammer curl",
+      "muscle": "Biceps",
+      "kind": "weight",
+      "desc": "Kladivový zdvih, dlaně proti sobě. Zabírá i brachialis a předloktí.",
+      "alias": "Kladivový zdvih"
+    },
+    {
+      "name": "Overhead cable extension",
+      "muscle": "Triceps",
+      "kind": "weight",
+      "desc": "Ruce nad hlavou, spouštíš zátěž za hlavu a narovnáváš lokty. Jediná poloha, kde se protáhne dlouhá hlava tricepsu.",
+      "alias": "Tricepsové extenze nad hlavu"
+    },
+    {
+      "name": "Triceps pushdown",
+      "muscle": "Triceps",
+      "kind": "weight",
+      "desc": "Kladka nahoře, lokty u těla, tlačíš dolů. Doplněk k extenzi nad hlavou.",
+      "alias": "Tricepsové stahování kladky"
+    },
+    {
+      "name": "Wrist curl",
+      "muscle": "Předloktí",
+      "kind": "weight",
+      "desc": "Předloktí opřená, zvedáš zátěž jen zápěstím. Flexory předloktí.",
+      "alias": "Zdvih zápěstí"
+    },
+    {
+      "name": "Reverse curl",
+      "muscle": "Předloktí",
+      "kind": "weight",
+      "desc": "Zdvih nadhmatem. Zabírá brachioradialis a extenzory předloktí.",
+      "alias": "Obrácený zdvih"
+    },
+    {
+      "name": "Farmer's walk",
+      "muscle": "Předloktí",
+      "kind": "time",
+      "desc": "Chůze s těžkými jednoručkami. Grip, trapézy a střed těla najednou.",
+      "alias": "Farmářská chůze"
+    },
+    {
+      "name": "Neck flexion",
+      "muscle": "Krk",
+      "kind": "weight",
+      "desc": "Leh na lavici hlavou přes okraj, kotouč na čele přes ručník, přitahuješ bradu k hrudi. Pomalu, bez švihu.",
+      "alias": "Flexe krku s kotoučem"
+    },
+    {
+      "name": "Neck extension",
+      "muscle": "Krk",
+      "kind": "weight",
+      "desc": "Opačný směr — vleže na břiše nebo v postroji zakláníš hlavu proti odporu. Dvě vteřiny v obou krajních polohách.",
+      "alias": "Extenze krku s postrojem"
+    },
+    {
+      "name": "Lateral neck flexion",
+      "muscle": "Krk",
+      "kind": "weight",
+      "desc": "Úklon hlavy do strany proti odporu. Třetí směr, volitelný.",
+      "alias": "Boční flexe krku"
+    },
+    {
+      "name": "Cable crunch",
       "muscle": "Břicho",
-      "kind": "weight"
+      "kind": "weight",
+      "desc": "Vkleče zády ke kladce, lano za hlavou, ohýbáš páteř dolů. Ohýbáš záda, není to cvik na kyčle.",
+      "alias": "Přítahy kolen na kladce vkleče"
     },
     {
-      "name": "Pallofův tlak",
+      "name": "Hanging leg raise",
       "muscle": "Břicho",
-      "kind": "weight"
+      "kind": "body",
+      "desc": "Ve visu zvedáš nohy. Podsazuj pánev, ne jen zvedej nohy z kyčlí.",
+      "alias": "Zvedání nohou ve visu"
     },
     {
-      "name": "Tlak na stroji",
-      "muscle": "Prsa",
-      "kind": "weight"
+      "name": "Pallof press",
+      "muscle": "Břicho",
+      "kind": "weight",
+      "desc": "Bokem ke kladce, ruce tlačíš před sebe a bráníš rotaci trupu. Anti-rotační práce.",
+      "alias": "Pallofův tlak"
     },
     {
-      "name": "Rozpažování na kladce",
-      "muscle": "Prsa",
-      "kind": "weight"
-    },
-    {
-      "name": "Běh lehký",
+      "name": "Easy run",
       "muscle": "Kardio",
-      "kind": "cardio"
+      "kind": "cardio",
+      "desc": "Lehký běh v konverzačním tempu, 140–155 tepů. Musíš u toho zvládnout mluvit ve větách.",
+      "alias": "Běh lehký"
     },
     {
-      "name": "Běh tempový",
+      "name": "Tempo run",
       "muscle": "Kardio",
-      "kind": "cardio"
+      "kind": "cardio",
+      "desc": "Tempový běh, 165–175 tepů. Jedna tvrdá jednotka týdně stačí.",
+      "alias": "Běh tempový"
     },
     {
-      "name": "HIIT / intervaly",
+      "name": "HIIT intervals",
       "muscle": "Kardio",
-      "kind": "cardio"
-    },
-    {
-      "name": "Přítahy na stroji s oporou hrudi",
-      "muscle": "Záda",
-      "kind": "weight"
-    },
-    {
-      "name": "Stahování horní kladky úzkým úchopem",
-      "muscle": "Záda",
-      "kind": "weight"
-    },
-    {
-      "name": "Shyby s dopomocí stroje",
-      "muscle": "Záda",
-      "kind": "weight"
+      "kind": "cardio",
+      "desc": "Intervaly na kole, veslu nebo pásu. Například 8× 30 s tvrdě / 90 s lehce.",
+      "alias": "HIIT / intervaly"
     }
   ],
   "routines": [
     {
-      "name": "Push (těžký)",
+      "name": "Push",
       "color": "#CE2E2E",
       "exercises": [
         {
-          "name": "Tlak s jednoručkami na šikmé lavici",
+          "name": "Incline dumbbell press",
           "sets": 4,
           "repLow": 6,
           "repHigh": 10,
           "rest": 150
         },
         {
-          "name": "Tlak na stroji",
+          "name": "Machine chest press",
           "sets": 3,
           "repLow": 8,
           "repHigh": 12,
           "rest": 120
         },
         {
-          "name": "Rozpažování na kladce",
+          "name": "Cable fly",
           "sets": 3,
           "repLow": 12,
           "repHigh": 15,
           "rest": 90
         },
         {
-          "name": "Tlak s jednoručkami nad hlavu",
+          "name": "Dumbbell shoulder press",
           "sets": 3,
           "repLow": 8,
           "repHigh": 12,
           "rest": 120
         },
         {
-          "name": "Upažování na kladce",
+          "name": "Cable lateral raise",
           "sets": 4,
           "repLow": 10,
           "repHigh": 15,
           "rest": 90
         },
         {
-          "name": "Tricepsové extenze nad hlavu",
+          "name": "Overhead cable extension",
           "sets": 3,
           "repLow": 8,
           "repHigh": 12,
           "rest": 90
         },
         {
-          "name": "Tricepsové stahování kladky",
+          "name": "Triceps pushdown",
           "sets": 2,
           "repLow": 10,
           "repHigh": 15,
@@ -181,32 +313,32 @@
       ]
     },
     {
-      "name": "Pull (těžký)",
+      "name": "Pull",
       "color": "#2158CC",
       "exercises": [
         {
-          "name": "Stahování horní kladky",
+          "name": "Lat pulldown",
           "sets": 4,
           "repLow": 8,
           "repHigh": 12,
           "rest": 150
         },
         {
-          "name": "Přítahy na stroji s oporou hrudi",
+          "name": "Chest-supported row",
           "sets": 4,
           "repLow": 8,
           "repHigh": 12,
           "rest": 150
         },
         {
-          "name": "Veslování na kladce",
+          "name": "Seated cable row",
           "sets": 3,
           "repLow": 10,
           "repHigh": 12,
           "rest": 90
         },
         {
-          "name": "Stahování s napjatýma rukama",
+          "name": "Straight-arm pulldown",
           "sets": 3,
           "repLow": 12,
           "repHigh": 15,
@@ -220,28 +352,28 @@
           "rest": 75
         },
         {
-          "name": "Shrugy",
+          "name": "Shrugs",
           "sets": 3,
           "repLow": 12,
           "repHigh": 15,
           "rest": 75
         },
         {
-          "name": "Bicepsový zdvih na šikmé lavici",
+          "name": "Incline dumbbell curl",
           "sets": 4,
           "repLow": 8,
           "repHigh": 12,
           "rest": 90
         },
         {
-          "name": "Obrácený zdvih",
+          "name": "Reverse curl",
           "sets": 3,
           "repLow": 12,
           "repHigh": 15,
           "rest": 75
         },
         {
-          "name": "Shyby s dopomocí stroje",
+          "name": "Assisted pull-ups",
           "sets": 2,
           "repLow": 6,
           "repHigh": 10,
@@ -250,7 +382,7 @@
       ]
     },
     {
-      "name": "Nohy, core a detaily",
+      "name": "Legs & core",
       "color": "#1E8A4C",
       "exercises": [
         {
@@ -261,56 +393,56 @@
           "rest": 120
         },
         {
-          "name": "Chodící výpady s jednoručkami",
+          "name": "Walking lunges",
           "sets": 3,
           "repLow": 10,
           "repHigh": 12,
           "rest": 120
         },
         {
-          "name": "Rumunský mrtvý tah",
+          "name": "Romanian deadlift",
           "sets": 3,
           "repLow": 8,
           "repHigh": 12,
           "rest": 120
         },
         {
-          "name": "Výpony na lýtka",
+          "name": "Calf raise",
           "sets": 3,
           "repLow": 12,
           "repHigh": 15,
           "rest": 60
         },
         {
-          "name": "Přítahy kolen na kladce vkleče",
+          "name": "Cable crunch",
           "sets": 3,
           "repLow": 10,
           "repHigh": 15,
           "rest": 90
         },
         {
-          "name": "Zvedání nohou ve visu",
+          "name": "Hanging leg raise",
           "sets": 3,
           "repLow": 10,
           "repHigh": 15,
           "rest": 90
         },
         {
-          "name": "Zdvih zápěstí",
+          "name": "Wrist curl",
           "sets": 3,
           "repLow": 15,
           "repHigh": 20,
           "rest": 60
         },
         {
-          "name": "Flexe krku s kotoučem",
+          "name": "Neck flexion",
           "sets": 2,
           "repLow": 15,
           "repHigh": 20,
           "rest": 60
         },
         {
-          "name": "Extenze krku s postrojem",
+          "name": "Neck extension",
           "sets": 2,
           "repLow": 15,
           "repHigh": 20,
@@ -323,35 +455,42 @@
       "color": "#E5B72A",
       "exercises": [
         {
-          "name": "Upažování s jednoručkami",
+          "name": "Cable lateral raise",
           "sets": 4,
           "repLow": 15,
           "repHigh": 20,
           "rest": 75
         },
         {
-          "name": "Rozpažování na kladce",
-          "sets": 3,
-          "repLow": 15,
-          "repHigh": 20,
-          "rest": 75
-        },
-        {
-          "name": "Stahování s napjatýma rukama",
-          "sets": 3,
-          "repLow": 15,
-          "repHigh": 20,
-          "rest": 75
-        },
-        {
-          "name": "Kladivový zdvih",
+          "name": "Single-arm lat pulldown",
           "sets": 3,
           "repLow": 12,
           "repHigh": 15,
           "rest": 75
         },
         {
-          "name": "Tricepsové stahování kladky",
+          "name": "Cable fly",
+          "sets": 3,
+          "repLow": 15,
+          "repHigh": 20,
+          "rest": 75
+        },
+        {
+          "name": "Hammer curl",
+          "sets": 3,
+          "repLow": 12,
+          "repHigh": 15,
+          "rest": 75
+        },
+        {
+          "name": "Overhead cable extension",
+          "sets": 3,
+          "repLow": 12,
+          "repHigh": 15,
+          "rest": 75
+        },
+        {
+          "name": "Triceps pushdown",
           "sets": 3,
           "repLow": 15,
           "repHigh": 20,
@@ -360,11 +499,11 @@
       ]
     },
     {
-      "name": "Běh lehký",
+      "name": "Easy run",
       "color": "#6BC5D2",
       "exercises": [
         {
-          "name": "Běh lehký",
+          "name": "Easy run",
           "sets": 1,
           "repLow": 30,
           "repHigh": 40,
@@ -373,11 +512,11 @@
       ]
     },
     {
-      "name": "Běh tvrdý",
+      "name": "Tempo run",
       "color": "#EC6F2A",
       "exercises": [
         {
-          "name": "Běh tempový",
+          "name": "Tempo run",
           "sets": 1,
           "repLow": 25,
           "repHigh": 35,
@@ -387,12 +526,12 @@
     }
   ],
   "weeklyPlan": {
-    "1": "Běh lehký",
-    "2": "Nohy, core a detaily",
-    "3": "Běh lehký",
+    "1": "Easy run",
+    "2": "Legs & core",
+    "3": "Easy run",
     "4": "Upper pump",
-    "5": "Běh tvrdý",
-    "6": "Push (těžký)",
-    "0": "Pull (těžký)"
+    "5": "Tempo run",
+    "6": "Push",
+    "0": "Pull"
   }
 }
