@@ -40,7 +40,7 @@ button,input,select{font:inherit;color:inherit}
 button{background:none;border:none;cursor:pointer}
 
 /* ---------- views ---------- */
-.view{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;padding-top:var(--top);padding-bottom:28px}
+.view{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;padding-top:var(--top);padding-bottom:40px;scroll-padding-bottom:40px}
 .view.on{display:block;animation:fade .2s ease}
 @keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 @keyframes up{from{transform:translateY(100%)}to{transform:none}}
@@ -160,7 +160,9 @@ h3{font-family:var(--disp);font-weight:500;font-size:17px;text-transform:upperca
 .empty p{color:var(--muted);font-size:13px;margin-top:8px;line-height:1.55}
 
 /* ---------- tab bar ---------- */
-.tabs{display:flex;background:#121417;border-top:1px solid var(--line);padding:8px 0 calc(8px + var(--bot));flex:none}
+.tabs{display:flex;background:#121417;border-top:1px solid var(--line);padding:8px 0 calc(8px + var(--bot));flex:none;position:relative;z-index:5}
+.tabs::before{content:'';position:absolute;left:0;right:0;bottom:100%;height:24px;pointer-events:none;
+  background:linear-gradient(rgba(22,24,27,0),var(--iron))}
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--dim);font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase}
 .tab .icon{width:21px;height:21px}
 .tab.on{color:var(--chalk)}
@@ -481,7 +483,7 @@ const TEMPLATES = [
 ];
 
 const MUSCLE_COLOR = {Prsa:'#CE2E2E','Záda':'#2158CC',Nohy:'#1E8A4C',Ramena:'#E5B72A',
-  Biceps:'#8B5CF6',Triceps:'#EC6F2A','Břicho':'#3AA8A8','Předloktí':'#6E8FA8',Krk:'#D9536F',Kardio:'#6BC5D2'};
+  Biceps:'#8B5CF6',Triceps:'#EC6F2A','Břicho':'#3AA8A8','Předloktí':'#6E8FA8',Krk:'#D9536F',Kardio:'#6BC5D2',Mobilita:'#8FA3B0'};
 const mcol = m => MUSCLE_COLOR[m] || '#6B7280';
 const ROUTINE_COLORS = ['#CE2E2E','#2158CC','#1E8A4C','#E5B72A','#8B5CF6','#EC6F2A','#3AA8A8'];
 const KINDS = {weight:'Váha × opakování', body:'Vlastní váha', time:'Čas (výdrž)', cardio:'Kardio (km, čas, tep)'};
@@ -655,7 +657,11 @@ function weeklyVolume(weeks=8){
 function setsPerMuscle(days=7){
   const from = key(addDays(today(), -days)), m = {};
   D.sessions.filter(s => s.finished && s.date >= from).forEach(s => {
-    s.logs.forEach(l => { const e = exById(l.exerciseId); if (e && e.kind !== 'cardio') m[e.muscle] = (m[e.muscle]||0) + 1; });
+    s.logs.forEach(l => {
+      const e = exById(l.exerciseId);
+      // rozcvička a protahování nejsou tréninkový objem
+      if (e && e.kind !== 'cardio' && e.muscle !== 'Mobilita') m[e.muscle] = (m[e.muscle]||0) + 1;
+    });
   });
   return Object.keys(m).map(k => ({muscle:k, sets:m[k]})).sort((a,b) => b.sets - a.sets);
 }
@@ -816,20 +822,27 @@ function renderDayCard(){
       '<div><div class="big">' + Math.max(1, Math.round(done.durationS/60)) + '<small>min</small></div><div class="eyebrow" style="margin-top:4px">Čas</div></div>' +
       '<div class="sep"></div>' +
       '<div><div class="big">' + s.sets + '</div><div class="eyebrow" style="margin-top:4px">Série</div></div></div>' +
-      '<button class="btn ghost" style="margin-top:14px" onclick="shareCard(\'post\',' + done.id + ')">Sdílet výsledek</button>';
+      '<button class="btn" style="margin-top:14px" onclick="openSessionDetail(' + done.id + ')">Zobrazit trénink</button>' +
+      '<button class="btn ghost gap" onclick="shareCard(\'post\',' + done.id + ')">Sdílet výsledek</button>';
   } else {
+    const open = openSessionFor(k);
+    const openSets = open ? open.logs.length : 0;
     body = r.exercises.map(re => {
       const e = exById(re.exerciseId);
       return '<div class="exline"><span>' + esc(e ? e.name : '?') + '</span><span class="data">' +
         re.sets + ' × ' + (re.repLow === re.repHigh ? re.repLow : re.repLow + '–' + re.repHigh) + '</span></div>';
     }).join('') +
-    '<button class="btn" style="margin-top:14px" onclick="startWorkout(' + r.id + ',\'' + k + '\')">Začít trénink</button>' +
+    (openSets ? '<div class="hint" style="margin:14px 0 0">' + IC_UP +
+      '<span>Rozpracovaný trénink · ' + openSets + ' sérií odškrtnuto</span></div>' : '') +
+    '<button class="btn" style="margin-top:14px" onclick="startWorkout(' + r.id + ',\'' + k + '\')">' +
+      (openSets ? 'Pokračovat v tréninku' : 'Začít trénink') + '</button>' +
     '<button class="btn ghost gap" onclick="shareCard(\'pre\',' + r.id + ',\'' + k + '\')">Sdílet plán tréninku</button>' +
     '<button class="btn ghost gap" onclick="pickRoutineFor(\'' + k + '\')">Změnit rutinu</button>';
   }
 
   box.innerHTML = '<div class="card"><div class="stripe" style="background:' + r.color + '"></div>' +
-    '<div class="eyebrow">' + dateLabel(sel) + ' · ' + (done ? 'hotovo' : 'plánováno') + '</div>' +
+    '<div class="eyebrow">' + dateLabel(sel) + ' · ' +
+      (done ? 'hotovo' : openSessionFor(k) ? 'rozpracováno' : 'plánováno') + '</div>' +
     '<h2 style="font-size:24px;margin-top:4px">' + esc(r.name) + '</h2>' +
     '<div class="muted">' + r.exercises.length + ' cviků · ' + r.exercises.reduce((a,e) => a+e.sets, 0) + ' sérií</div>' +
     body + '</div>';
@@ -908,6 +921,88 @@ function pickRoutineFor(k){
 }
 function setOverride(k, rid){ D.overrides[k] = rid; save(); closeModal(); renderCalendar(); }
 function clearOverride(k){ delete D.overrides[k]; save(); closeModal(); renderCalendar(); }
+
+/* ---------- detail odcvičeného tréninku ---------- */
+let detailId = null;
+
+function openSessionDetail(id){
+  detailId = id;
+  document.getElementById('push-title').textContent = 'Záznam tréninku';
+  renderSessionDetail();
+  document.getElementById('push').classList.add('on');
+}
+
+function renderSessionDetail(){
+  const s = D.sessions.find(x => x.id === detailId);
+  if (!s) return closePush();
+  const r = routineById(s.routineId), sum = summarize(s);
+  const color = r ? r.color : 'var(--line)';
+
+  // série seskupené po cvicích, v pořadí podle rutiny
+  const order = r ? r.exercises.map(x => x.exerciseId) : [];
+  const ids = [...new Set(s.logs.map(l => l.exerciseId))]
+    .sort((a,b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99));
+
+  const blocks = ids.map(exId => {
+    const e = exById(exId);
+    const sets = s.logs.filter(l => l.exerciseId === exId).sort((a,b) => a.setIndex - b.setIndex);
+    const cardio = e && e.kind === 'cardio';
+    const best = cardio ? null : Math.max(...sets.map(x => x.weight));
+    const note = s.notes && s.notes[exId];
+    return '<div class="card"><div class="stripe" style="background:' + (e ? mcol(e.muscle) : '#666') + '"></div>' +
+      '<h3>' + esc(e ? e.name : 'Smazaný cvik') + '</h3>' +
+      '<div class="data" style="margin-top:3px">' + sets.length + ' sérií' +
+        (cardio ? '' : ' · nejvíc ' + num(best) + ' kg') + '</div>' +
+      '<div style="margin-top:10px">' + sets.map((x,i) =>
+        '<div class="exline"><span class="data">' + (i+1) + '.</span><span style="font-family:var(--mono);font-size:13.5px">' +
+        (cardio
+          ? num(x.dist||0) + ' km · ' + (x.min||0) + ' min' + (x.hr ? ' · ' + x.hr + ' tepů' : '')
+          : num(x.weight) + ' kg × ' + x.reps) +
+        '</span></div>').join('') + '</div>' +
+      (note ? '<div class="notelast" style="margin:12px 0 0">' + IC_NOTE + '<span>' + esc(note) + '</span></div>' : '') +
+      '</div>';
+  }).join('');
+
+  document.getElementById('push-body').innerHTML =
+    '<div class="card" style="margin-top:12px"><div class="stripe" style="background:' + color + '"></div>' +
+      '<div class="eyebrow">' + dateLabel(fromKey(s.date)) + '</div>' +
+      '<h2 style="font-size:24px;margin-top:4px">' + esc(r ? r.name : 'Trénink') + '</h2>' +
+      '<div class="stats" style="margin-top:14px">' +
+        (sum.km > 0
+          ? '<div><div class="big">' + num(sum.km) + '<small>km</small></div><div class="eyebrow" style="margin-top:4px">Vzdálenost</div></div>'
+          : '<div><div class="big">' + num(sum.volume/1000) + '<small>t</small></div><div class="eyebrow" style="margin-top:4px">Objem</div></div>') +
+        '<div class="sep"></div>' +
+        '<div><div class="big">' + Math.max(1, Math.round(s.durationS/60)) + '<small>min</small></div><div class="eyebrow" style="margin-top:4px">Čas</div></div>' +
+        '<div class="sep"></div>' +
+        '<div><div class="big">' + sum.sets + '</div><div class="eyebrow" style="margin-top:4px">Série</div></div>' +
+      '</div>' +
+      (sum.prs.length ? '<div class="notelast" style="margin:14px 0 0">★<span>Rekord — ' +
+        esc(sum.prs.map(p => p.name + ' ' + num(p.weight) + ' kg').join(', ')) + '</span></div>' : '') +
+    '</div>' +
+    '<div class="sec">Odcvičeno</div>' + (blocks || '<div class="empty"><h3>Bez záznamu sérií</h3></div>') +
+    '<div class="pad">' +
+      '<button class="btn" onclick="shareCard(\'post\',' + s.id + ')">Sdílet výsledek</button>' +
+      '<button class="btn ghost gap" onclick="reopenSession(' + s.id + ')">Upravit trénink</button>' +
+      '<button class="btn danger gap" onclick="deleteSession(' + s.id + ')">Smazat záznam</button>' +
+    '</div>';
+}
+
+/** Znovu otevře dokončený trénink, aby šlo opravit překlep. */
+function reopenSession(id){
+  const s = D.sessions.find(x => x.id === id);
+  if (!s || !confirm('Otevřít trénink k úpravě?\nDokud ho znovu nedokončíš, bude se počítat jako rozpracovaný.')) return;
+  s.finished = false; save();
+  closePush();
+  startWorkout(s.routineId, s.date);
+}
+
+function deleteSession(id){
+  const s = D.sessions.find(x => x.id === id);
+  if (!s || !confirm('Smazat celý záznam tréninku?\nSérie i rekordy z něj zmizí a nejde to vrátit.')) return;
+  D.sessions = D.sessions.filter(x => x.id !== id);
+  save(); closePush(); renderCalendar(); renderProgress();
+  toast('Záznam smazán');
+}
 
 /* ---------- editor rutiny ---------- */
 let editId = null;
@@ -1166,7 +1261,7 @@ function renderProgress(){
   const prs = personalRecords(20);
   const box = document.getElementById('progbody');
   if (!prs.length){
-    const cs = cardioSection();
+    const cs = cardioSection() + historySection();
     box.innerHTML = cs || ('<div class="empty"><h3>Ještě není co měřit</h3>' +
       '<p>Dokonči první trénink a začnou se tu kreslit křivky, objem a rekordy.</p></div>');
     return;
@@ -1212,6 +1307,7 @@ function renderProgress(){
     }).join('') : '<div class="muted">Poslední týden bez tréninku.</div>') + '</div>' +
 
     cardioSection() +
+    historySection() +
     '<div class="sec">Osobní rekordy</div>' +
     '<div class="card">' + prs.slice(0,6).map(p =>
       '<div class="pr"><span class="w">' + num(p.w) + ' kg</span><span class="nm">' + esc(p.name) + '</span><span class="axis">' + shortDate(p.date) + '</span></div>').join('') + '</div>' +
@@ -1254,6 +1350,30 @@ function cardioSection(){
     '</div>';
 }
 
+/** Posledních deset odcvičených tréninků, kliknutím se otevře detail. */
+function historySection(){
+  const list = D.sessions.filter(s => s.finished)
+    .sort((a,b) => a.date < b.date ? 1 : (a.date > b.date ? -1 : b.id - a.id)).slice(0, 10);
+  if (!list.length) return '';
+  return '<div class="sec">Historie</div>' + list.map(s => {
+    const r = routineById(s.routineId), sum = summarize(s);
+    return '<button class="card" onclick="openSessionDetail(' + s.id + ')">' +
+      '<div class="stripe" style="background:' + (r ? r.color : 'var(--line)') + '"></div>' +
+      '<div style="display:flex;align-items:center;gap:10px">' +
+        '<div style="flex:1;min-width:0">' +
+          '<h3>' + esc(r ? r.name : 'Trénink') + '</h3>' +
+          '<div class="data" style="margin-top:3px">' +
+            (sum.km > 0 ? num(sum.km) + ' km' : num(sum.volume/1000) + ' t') +
+            ' · ' + sum.sets + ' sérií · ' + Math.max(1, Math.round(s.durationS/60)) + ' min' +
+            (sum.prs.length ? ' · ★' + sum.prs.length : '') +
+          '</div>' +
+        '</div>' +
+        '<span class="axis">' + shortDate(s.date) + '</span>' +
+        '<svg class="icon" style="width:16px;height:16px;color:var(--dim)" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>' +
+      '</div></button>';
+  }).join('');
+}
+
 function chartSVG(data){
   if (data.length < 2) return '<div class="muted" style="margin-top:16px;font-size:12.5px">Potřebuješ aspoň dva týdny dat.</div>';
   const W = 340, H = 120;
@@ -1283,17 +1403,29 @@ function startWorkout(routineId, dateKey){
 
   rows = {};
   r.exercises.forEach(re => {
+    const e = exById(re.exerciseId);
+    const cardio = e && e.kind === 'cardio';
     const last = lastPerformance(re.exerciseId, session.id);
     const hint = last ? overloadHint(last.sets, re.sets, re.repHigh, last.top.weight) : null;
     const w = hint ? hint.next : (last ? last.top.weight : 0);
-    if (exById(re.exerciseId).kind === 'cardio'){
-      const lr = last && last.sets[0];
-      rows[re.id] = Array.from({length: re.sets}, () => ({
-        dist: lr ? num(lr.dist||0) : '5', min: lr ? String(lr.min||30) : '30',
-        hr: lr ? String(lr.hr||'') : '', weight:'0', reps:'0', done:false}));
-    } else {
-      rows[re.id] = Array.from({length: re.sets}, () => ({weight: num(w), reps: String(re.repLow), done: false}));
-    }
+    const lr = last && last.sets[0];
+
+    // Už odškrtnuté série z rozpracovaného tréninku — bez tohohle by se
+    // po návratu tvářily jako neodcvičené, i když v databázi jsou.
+    const saved = {};
+    session.logs.filter(l => l.exerciseId === re.exerciseId).forEach(l => { saved[l.setIndex] = l; });
+
+    const count = Math.max(re.sets, ...Object.keys(saved).map(k => +k + 1), 0);
+    rows[re.id] = Array.from({length: count}, (_, i) => {
+      const s = saved[i];
+      if (cardio){
+        if (s) return {dist:num(s.dist||0), min:String(s.min||0), hr:s.hr?String(s.hr):'', weight:'0', reps:'0', done:true};
+        return {dist: lr ? num(lr.dist||0) : '5', min: lr ? String(lr.min||30) : '30',
+                hr: lr ? String(lr.hr||'') : '', weight:'0', reps:'0', done:false};
+      }
+      if (s) return {weight:num(s.weight), reps:String(s.reps), done:true};
+      return {weight:num(w), reps:String(re.repLow), done:false};
+    });
   });
 
   document.getElementById('w-title').textContent = r.name;
@@ -1301,10 +1433,15 @@ function startWorkout(routineId, dateKey){
   renderWorkout(r);
   document.getElementById('workout').classList.add('on');
 
-  wSecs = 0;
-  document.getElementById('w-clock').textContent = '00:00';
+  // Navážeme na čas, který už trénink trval.
+  wSecs = session.durationS || 0;
+  document.getElementById('w-clock').textContent = clock(wSecs);
   clearInterval(clockT);
-  clockT = setInterval(() => { wSecs++; document.getElementById('w-clock').textContent = clock(wSecs); }, 1000);
+  clockT = setInterval(() => {
+    wSecs++;
+    document.getElementById('w-clock').textContent = clock(wSecs);
+    if (wSecs % 15 === 0){ session.durationS = wSecs; save(); }
+  }, 1000);
 }
 
 const IC_KG = '<svg class="icon" viewBox="0 0 24 24"><path d="M9.5 6.5a2.5 2.5 0 1 1 5 0"/><path d="M6.8 8.5h10.4l1.8 11.5H5z"/></svg>';
@@ -1423,10 +1560,11 @@ function addRest(n){ restLeft += n; restTotal = Math.max(restTotal, restLeft); d
 function skipRest(){ clearInterval(restT); document.getElementById('rest').classList.remove('on'); }
 
 function quitWorkout(){
-  if (!confirm('Ukončit trénink?\nOdškrtnuté série zůstanou uložené.')) return;
+  if (!confirm('Ukončit trénink?\nOdškrtnuté série zůstanou uložené a příště na ně navážeš.')) return;
   closeWorkout();
 }
 function closeWorkout(){
+  if (session && !session.finished){ session.durationS = wSecs; save(); }
   document.getElementById('workout').classList.remove('on');
   clearInterval(clockT); skipRest();
   renderCalendar();
@@ -1472,6 +1610,80 @@ function stepPlates(d){ calcW = Math.max(20, calcW + d); drawPlates(); }
 
 function openModal(html){ document.getElementById('modal-body').innerHTML = html; document.getElementById('modal').classList.add('on'); }
 function closeModal(){ swapTarget = null; document.getElementById('modal').classList.remove('on'); }
+
+
+/* ================================================================
+   SVALOVÁ MAPA
+   Postava se skládá z jednotlivých svalových oblastí. Sytost barvy
+   odpovídá počtu sérií, které partie ten den dostala.
+   ================================================================ */
+
+// Souřadnice v normalizované soustavě 100 × 200, střed těla je x = 50.
+const BODY_FRONT = [
+  ['Krk',        [['r',46,20,8,9,3]]],
+  ['Ramena',     [['e',29.5,41,12,9.5],['e',70.5,41,12,9.5]]],
+  ['Prsa',       [['r',34,34,14,20,7],['r',52,34,14,20,7]]],
+  ['Biceps',     [['e',25,62,7.5,15],['e',75,62,7.5,15]]],
+  ['Předloktí',  [['e',21,90,6.5,15],['e',79,90,6.5,15]]],
+  ['Břicho',     [['r',42,54,16,29,5]]],
+  ['Nohy',       [['r',38.5,86,11,45,8],['r',50.5,86,11,45,8],
+                  ['r',40,134,9.5,30,5],['r',50.5,134,9.5,30,5]]],
+];
+
+const BODY_BACK = [
+  ['Krk',        [['r',46,20,8,9,3]]],
+  ['Ramena',     [['e',29.5,41,12,9.5],['e',70.5,41,12,9.5]]],
+  ['Záda',       [['r',34,34,32,24,8],['r',38,57,24,26,7]]],
+  ['Triceps',    [['e',25,62,7.5,15],['e',75,62,7.5,15]]],
+  ['Předloktí',  [['e',21,90,6.5,15],['e',79,90,6.5,15]]],
+  ['Nohy',       [['e',44.5,88,9,8],['e',55.5,88,9,8],
+                  ['r',38.5,95,11,39,8],['r',50.5,95,11,39,8],
+                  ['r',40,134,9.5,30,5],['r',50.5,134,9.5,30,5]]],
+];
+
+/** Kolik sérií dostala která partie v jednom tréninku. */
+function sessionMuscles(session){
+  const m = {};
+  session.logs.forEach(l => {
+    const e = exById(l.exerciseId);
+    if (e && e.kind !== 'cardio' && e.muscle !== 'Mobilita') m[e.muscle] = (m[e.muscle] || 0) + 1;
+  });
+  return m;
+}
+
+function drawShape(g, s, ox, oy, k){
+  g.beginPath();
+  if (s[0] === 'e'){
+    g.ellipse(ox + s[1]*k, oy + s[2]*k, s[3]*k, s[4]*k, 0, 0, Math.PI*2);
+  } else {
+    const x = ox + s[1]*k, y = oy + s[2]*k, w = s[3]*k, h = s[4]*k, r = s[5]*k;
+    g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r);
+    g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath();
+  }
+  g.fill();
+}
+
+/** Vykreslí jednu postavu. worked = mapa partie → počet sérií. */
+function drawBody(g, regions, ox, oy, k, worked, color){
+  const mx = Math.max(1, ...Object.values(worked));
+  // hlava
+  g.fillStyle = '#2A3038';
+  g.beginPath(); g.arc(ox + 50*k, oy + 12*k, 8.5*k, 0, Math.PI*2); g.fill();
+
+  regions.forEach(([muscle, shapes]) => {
+    const sets = worked[muscle] || 0;
+    if (sets > 0){
+      const a = 0.4 + 0.6 * (sets / mx);
+      g.fillStyle = color;
+      g.globalAlpha = a;
+    } else {
+      g.fillStyle = '#2A3038';
+      g.globalAlpha = 1;
+    }
+    shapes.forEach(s => drawShape(g, s, ox, oy, k));
+  });
+  g.globalAlpha = 1;
+}
 
 /* ================================================================
    SDÍLECÍ KARTY — kreslené na canvas, takže vzniká skutečný PNG
@@ -1550,58 +1762,95 @@ function drawPreCard(g, r, date){
 /** Karta po tréninku — chlouba do skupiny. */
 function drawPostCard(g, s){
   const r = routineById(s.routineId), sum = summarize(s);
+  const worked = sessionMuscles(s);
+  const hasMuscles = Object.keys(worked).length > 0;
   cardBase(g);
+
   g.save(); g.globalAlpha = .18; g.fillStyle = r.color;
-  g.beginPath(); g.arc(CW-40, 40, 260, 0, 7); g.fill(); g.restore();
+  g.beginPath(); g.arc(CW-40, 40, 240, 0, 7); g.fill(); g.restore();
 
   g.textAlign = 'left';
   g.fillStyle = r.color; g.font = '400 26px "IBM Plex Mono", monospace';
   g.letterSpacing = '5px';
-  g.fillText((dateLabel(fromKey(s.date)) + ' · odcvičeno').toUpperCase(), 60, 110);
+  g.fillText((dateLabel(fromKey(s.date)) + ' · odcvičeno').toUpperCase(), 60, 100);
   g.letterSpacing = '0px';
 
-  g.fillStyle = '#E9E7E1'; g.font = '700 128px Oswald, sans-serif';
-  g.fillText(r.name.toUpperCase(), 58, 250);
-  g.fillStyle = '#868D95'; g.font = '400 30px "IBM Plex Mono", monospace';
-  g.fillText(sum.sets + ' sérií dokončeno', 60, 316);
+  g.fillStyle = '#E9E7E1'; g.font = '700 110px Oswald, sans-serif';
+  g.fillText(r.name.toUpperCase(), 58, 210);
 
+  if (hasMuscles){
+    // dvě postavy vedle sebe, čelně a zezadu
+    const k = 3.7, bw = 100 * k, gap = 60;
+    const ox = (CW - (bw*2 + gap)) / 2, oy = 255;
+    drawBody(g, BODY_FRONT, ox, oy, k, worked, r.color);
+    drawBody(g, BODY_BACK, ox + bw + gap, oy, k, worked, r.color);
+
+    g.textAlign = 'center';
+    g.fillStyle = '#5C636B'; g.font = '400 22px "IBM Plex Mono", monospace';
+    g.letterSpacing = '3px';
+    g.fillText('ZEPŘEDU', ox + bw/2, oy + 164*k + 48);
+    g.fillText('ZEZADU', ox + bw + gap + bw/2, oy + 164*k + 48);
+    g.letterSpacing = '0px';
+
+    // legenda: nejvíc zatížené partie
+    const top = Object.entries(worked).sort((a,b) => b[1]-a[1]).slice(0,4);
+    g.textAlign = 'left';
+    let lx = 60;
+    const ly = CH - 300;
+    top.forEach(([m, n]) => {
+      g.fillStyle = r.color; g.globalAlpha = .35 + .65*(n / Math.max(...Object.values(worked)));
+      roundRect(g, lx, ly-24, 16, 16, 4); g.fill(); g.globalAlpha = 1;
+      g.fillStyle = '#868D95'; g.font = '400 27px "IBM Plex Sans", sans-serif';
+      const label = m + ' ' + n;
+      g.fillText(label, lx + 26, ly - 10);
+      lx += 26 + g.measureText(label).width + 40;
+    });
+  }
+
+  const statY = hasMuscles ? CH - 190 : 520;
   const stats = [
     sum.km > 0 ? [num(sum.km), 'km', 'Vzdálenost'] : [num(sum.volume/1000), 't', 'Objem'],
     [String(Math.max(1, Math.round(s.durationS/60))), 'min', 'Čas'],
     [String(sum.sets), '', 'Série']
   ];
+  if (sum.prs.length) stats.push([String(sum.prs.length), '', sum.prs.length === 1 ? 'Rekord' : 'Rekordy']);
+
+  const colW = (CW - 120) / stats.length;
   stats.forEach(([v,u,l], i) => {
-    const x = 60 + i*320;
-    g.fillStyle = '#E9E7E1'; g.font = '600 84px Oswald, sans-serif'; g.textAlign = 'left';
-    g.fillText(v, x, 450);
+    const x = 60 + i*colW;
+    g.textAlign = 'left';
+    g.fillStyle = l.startsWith('Rekord') ? '#F0D57C' : '#E9E7E1';
+    g.font = '600 78px Oswald, sans-serif';
+    g.fillText(v, x, statY);
     if (u){
-      const w = g.measureText(v).width;
-      g.fillStyle = '#868D95'; g.font = '400 34px "IBM Plex Sans", sans-serif';
-      g.fillText(' ' + u, x + w, 450);
+      g.fillStyle = '#868D95'; g.font = '400 32px "IBM Plex Sans", sans-serif';
+      g.fillText(' ' + u, x + measureOswald(g, v, 78), statY);
     }
     g.fillStyle = '#5C636B'; g.font = '400 24px "IBM Plex Mono", monospace';
-    g.letterSpacing = '3px'; g.fillText(l.toUpperCase(), x, 496); g.letterSpacing = '0px';
+    g.letterSpacing = '3px'; g.fillText(l.toUpperCase(), x, statY + 50); g.letterSpacing = '0px';
   });
 
-  let y = 610;
-  if (sum.prs.length){
-    g.fillStyle = 'rgba(229,183,42,.12)'; roundRect(g, 60, y-46, CW-120, 84, 16); g.fill();
-    g.strokeStyle = 'rgba(229,183,42,.45)'; g.lineWidth = 2; g.stroke();
-    g.fillStyle = '#F0D57C'; g.font = '400 30px "IBM Plex Sans", sans-serif'; g.textAlign = 'left';
-    const txt = '★ Nový rekord — ' + sum.prs.map(p => p.name + ' ' + num(p.weight) + ' kg').join(', ');
-    g.fillText(clip(g, txt, CW-160), 90, y+4);
-    y += 120;
+  if (!hasMuscles){
+    let y = 640;
+    sum.perEx.slice(0,7).forEach(x => {
+      g.fillStyle = '#E9E7E1'; g.font = '400 36px "IBM Plex Sans", sans-serif'; g.textAlign = 'left';
+      g.fillText(clip(g, x.name, 640), 60, y);
+      g.strokeStyle = '#1E8A4C'; g.lineWidth = 5; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(CW-100, y-6); g.lineTo(CW-86, y+8); g.lineTo(CW-60, y-24); g.stroke();
+      line(g, y+28); y += 88;
+    });
   }
 
-  sum.perEx.slice(0,7).forEach(x => {
-    g.fillStyle = '#E9E7E1'; g.font = '400 36px "IBM Plex Sans", sans-serif'; g.textAlign = 'left';
-    g.fillText(clip(g, x.name, 640), 60, y);
-    g.strokeStyle = '#1E8A4C'; g.lineWidth = 5; g.lineCap = 'round';
-    g.beginPath(); g.moveTo(CW-100, y-6); g.lineTo(CW-86, y+8); g.lineTo(CW-60, y-24); g.stroke();
-    line(g, y+28); y += 88;
-  });
-
   cardFoot(g, r.color);
+}
+
+/** Šířka textu v Oswaldu — měří se zvlášť, protože se mění font mezi voláními. */
+function measureOswald(g, text, size){
+  const prev = g.font;
+  g.font = '600 ' + size + 'px Oswald, sans-serif';
+  const w = g.measureText(text).width;
+  g.font = prev;
+  return w;
 }
 
 function clip(g, text, maxW){
