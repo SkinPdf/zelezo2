@@ -1,5 +1,5 @@
 /* Service worker — díky němu appka funguje i bez signálu ve sklepním fitku. */
-const CACHE = 'zelezo-v17';
+const CACHE = 'zelezo-v18';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
