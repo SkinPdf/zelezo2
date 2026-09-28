@@ -34,8 +34,8 @@
     {
       "name": "Assisted pull-ups",
       "muscle": "Záda",
-      "kind": "weight",
-      "desc": "Shyby na stroji s protiváhou. Radši méně opakování s menší dopomocí než hodně lehkých.",
+      "kind": "assist",
+      "desc": "Shyby na stroji s protiváhou. Do políčka píšeš DOPOMOC – čím méně, tím lépe. Na začátku tréninku jen 2 lehké série daleko od selhání (grease the groove), v Pull dni naplno.",
       "alias": "Shyby s dopomocí stroje"
     },
     {
@@ -350,6 +350,19 @@
       "muscle": "Břicho",
       "kind": "time",
       "desc": "Chůze s jednou těžkou jednoručkou u boku. Trup drž rovně a nenaklápěj se — šikmé svaly na druhé straně to drží."
+    },
+    {
+      "name": "Low-to-high cable fly",
+      "muscle": "Prsa",
+      "kind": "weight",
+      "desc": "Kladky dole, ruce vedeš obloukem zespodu nahoru před obličej. Zátěž jde do horní části prsou, která ti zaostává."
+    },
+    {
+      "name": "Preacher curl",
+      "muscle": "Biceps",
+      "kind": "weight",
+      "desc": "Zdvih na Scottově lavici. Paže opřené, žádné švihání, dole nech biceps protáhnout.",
+      "alias": "Zdvih na Scottově lavici"
     }
   ],
   "routines": [
@@ -357,6 +370,13 @@
       "name": "Push",
       "color": "#CE2E2E",
       "exercises": [
+        {
+          "name": "Assisted pull-ups",
+          "sets": 2,
+          "repLow": 4,
+          "repHigh": 6,
+          "rest": 90
+        },
         {
           "name": "Incline dumbbell press",
           "sets": 4,
@@ -390,7 +410,7 @@
           "sets": 4,
           "repLow": 10,
           "repHigh": 15,
-          "rest": 90
+          "rest": 75
         },
         {
           "name": "Overhead cable extension",
@@ -413,31 +433,31 @@
       "color": "#2158CC",
       "exercises": [
         {
-          "name": "Lat pulldown",
+          "name": "Assisted pull-ups",
           "sets": 4,
-          "repLow": 8,
-          "repHigh": 12,
+          "repLow": 5,
+          "repHigh": 8,
           "rest": 150
         },
         {
-          "name": "Chest-supported row",
-          "sets": 4,
+          "name": "Lat pulldown",
+          "sets": 3,
           "repLow": 8,
           "repHigh": 12,
-          "rest": 150
+          "rest": 120
+        },
+        {
+          "name": "Chest-supported row",
+          "sets": 3,
+          "repLow": 8,
+          "repHigh": 12,
+          "rest": 120
         },
         {
           "name": "Seated cable row",
           "sets": 3,
           "repLow": 10,
           "repHigh": 12,
-          "rest": 90
-        },
-        {
-          "name": "Straight-arm pulldown",
-          "sets": 3,
-          "repLow": 12,
-          "repHigh": 15,
           "rest": 90
         },
         {
@@ -448,11 +468,11 @@
           "rest": 75
         },
         {
-          "name": "Shrugs",
+          "name": "Cable lateral raise",
           "sets": 3,
           "repLow": 12,
-          "repHigh": 15,
-          "rest": 75
+          "repHigh": 20,
+          "rest": 60
         },
         {
           "name": "Incline dumbbell curl",
@@ -467,13 +487,6 @@
           "repLow": 12,
           "repHigh": 15,
           "rest": 75
-        },
-        {
-          "name": "Assisted pull-ups",
-          "sets": 2,
-          "repLow": 6,
-          "repHigh": 10,
-          "rest": 120
         }
       ]
     },
@@ -481,6 +494,13 @@
       "name": "Legs & core",
       "color": "#1E8A4C",
       "exercises": [
+        {
+          "name": "Assisted pull-ups",
+          "sets": 2,
+          "repLow": 4,
+          "repHigh": 6,
+          "rest": 90
+        },
         {
           "name": "Hip thrust",
           "sets": 4,
@@ -507,6 +527,13 @@
           "sets": 3,
           "repLow": 12,
           "repHigh": 15,
+          "rest": 45
+        },
+        {
+          "name": "Cable lateral raise",
+          "sets": 3,
+          "repLow": 12,
+          "repHigh": 20,
           "rest": 60
         },
         {
@@ -514,35 +541,35 @@
           "sets": 3,
           "repLow": 10,
           "repHigh": 15,
-          "rest": 90
+          "rest": 75
         },
         {
           "name": "Dumbbell side bend",
           "sets": 3,
           "repLow": 10,
           "repHigh": 15,
-          "rest": 60
+          "rest": 45
         },
         {
           "name": "Hanging leg raise",
           "sets": 3,
           "repLow": 10,
           "repHigh": 15,
-          "rest": 90
+          "rest": 75
         },
         {
           "name": "Neck flexion",
           "sets": 2,
           "repLow": 15,
           "repHigh": 20,
-          "rest": 60
+          "rest": 45
         },
         {
           "name": "Neck extension",
           "sets": 2,
           "repLow": 15,
           "repHigh": 20,
-          "rest": 60
+          "rest": 45
         }
       ]
     },
@@ -551,46 +578,74 @@
       "color": "#E5B72A",
       "exercises": [
         {
+          "name": "Assisted pull-ups",
+          "sets": 2,
+          "repLow": 4,
+          "repHigh": 6,
+          "rest": 90
+        },
+        {
+          "name": "Hip thrust",
+          "sets": 3,
+          "repLow": 10,
+          "repHigh": 15,
+          "rest": 90
+        },
+        {
+          "name": "Cable kickback",
+          "sets": 2,
+          "repLow": 12,
+          "repHigh": 15,
+          "rest": 45
+        },
+        {
           "name": "Cable lateral raise",
           "sets": 4,
           "repLow": 15,
           "repHigh": 20,
-          "rest": 75
+          "rest": 60
+        },
+        {
+          "name": "Low-to-high cable fly",
+          "sets": 3,
+          "repLow": 12,
+          "repHigh": 20,
+          "rest": 60
         },
         {
           "name": "Single-arm lat pulldown",
           "sets": 3,
           "repLow": 12,
           "repHigh": 15,
-          "rest": 75
+          "rest": 60
         },
         {
-          "name": "Cable fly",
+          "name": "Preacher curl",
           "sets": 3,
-          "repLow": 15,
-          "repHigh": 20,
-          "rest": 75
+          "repLow": 10,
+          "repHigh": 15,
+          "rest": 60
         },
         {
           "name": "Hammer curl",
           "sets": 3,
           "repLow": 12,
           "repHigh": 15,
-          "rest": 75
+          "rest": 60
         },
         {
           "name": "Overhead cable extension",
           "sets": 3,
           "repLow": 12,
           "repHigh": 15,
-          "rest": 75
+          "rest": 60
         },
         {
           "name": "Triceps pushdown",
           "sets": 3,
           "repLow": 15,
           "repHigh": 20,
-          "rest": 75
+          "rest": 60
         }
       ]
     },

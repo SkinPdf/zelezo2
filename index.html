@@ -526,7 +526,7 @@ const MUSCLE_COLOR = {Prsa:'#CE2E2E','Záda':'#2158CC',Nohy:'#1E8A4C',Ramena:'#E
   Biceps:'#8B5CF6',Triceps:'#EC6F2A','Břicho':'#3AA8A8','Předloktí':'#6E8FA8',Krk:'#D9536F',Kardio:'#6BC5D2',Mobilita:'#8FA3B0'};
 const mcol = m => MUSCLE_COLOR[m] || '#6B7280';
 const ROUTINE_COLORS = ['#CE2E2E','#2158CC','#1E8A4C','#E5B72A','#8B5CF6','#EC6F2A','#3AA8A8'];
-const KINDS = {weight:'Váha × opakování', body:'Vlastní váha', time:'Čas (výdrž)', cardio:'Kardio (km, čas, tep)'};
+const KINDS = {weight:'Váha × opakování', body:'Vlastní váha', time:'Čas (výdrž)', cardio:'Kardio (km, čas, tep)', assist:'Dopomoc (méně = lépe)'};
 const TARGET = {Prsa:[10,20],'Záda':[10,20],Nohy:[10,20],Ramena:[10,24],Biceps:[8,16],Triceps:[8,16],
   'Břicho':[8,18],'Předloktí':[4,12],Krk:[4,10]};
 
@@ -654,12 +654,20 @@ function plates(total, bar=20){
 }
 
 /** Když jsi minule dal všechny série na horní hranici, je čas přidat. */
-function overloadHint(sets, targetSets, repHigh, weight){
+function overloadHint(sets, targetSets, repHigh, weight, assist){
   if (!sets || sets.length < targetSets) return null;
   if (!sets.every(s => s.reps >= repHigh)) return null;
+  if (assist){
+    // u dopomoci je progres opačně – dopomoc se ubírá
+    if (weight <= 0) return null;
+    const next = Math.max(0, weight - 2.5);
+    return {next, text: next === 0 ? 'Minule všechny série na ' + repHigh + '. Zkus to bez dopomoci.'
+                                   : 'Minule všechny série na ' + repHigh + '. Uber dopomoc na ' + num(next) + ' kg.'};
+  }
   const step = weight >= 60 ? 2.5 : 1.25;
   return {next: weight + step, text:'Minule jsi dal všechny série na ' + repHigh + '. Zkus ' + num(weight+step) + ' kg.'};
 }
+const isAssist = id => { const e = exById(id); return !!(e && e.kind === 'assist'); };
 
 let toastT;
 function toast(msg){
@@ -740,7 +748,7 @@ function personalRecords(limit=20){
     s.logs.forEach(l => {
       if (l.weight <= 0) return;
       const ex = exById(l.exerciseId);
-      if (ex && ex.kind === 'cardio') return;
+      if (ex && (ex.kind === 'cardio' || ex.kind === 'assist')) return;
       if (!best[l.exerciseId] || l.weight > best[l.exerciseId].w)
         best[l.exerciseId] = {id:l.exerciseId, w:l.weight, date:s.date};
     });
@@ -762,7 +770,7 @@ function stagnating(){
 }
 
 function summarize(session){
-  const volume = session.logs.reduce((a,l) => a + l.weight * l.reps, 0);
+  const volume = session.logs.reduce((a,l) => a + (isAssist(l.exerciseId) ? 0 : l.weight * l.reps), 0);
   const km = session.logs.reduce((a,l) => a + (l.dist || 0), 0);
   const perEx = [];
   session.logs.forEach(l => {
@@ -775,7 +783,7 @@ function summarize(session){
     let prev = 0;
     D.sessions.filter(s => s.finished && s.id !== session.id).forEach(s =>
       s.logs.filter(l => l.exerciseId === x.id).forEach(l => { if (l.weight > prev) prev = l.weight; }));
-    if (x.top > 0 && x.top > prev) prs.push({name:x.name, weight:x.top});
+    if (x.top > 0 && x.top > prev && !isAssist(x.id)) prs.push({name:x.name, weight:x.top});
   });
   return {sets: session.logs.length, volume, km, perEx, prs, durationS: session.durationS};
 }
@@ -1561,8 +1569,11 @@ function startWorkout(routineId, dateKey){
     const e = exById(re.exerciseId);
     const cardio = e && e.kind === 'cardio';
     const last = lastPerformance(re.exerciseId, session.id);
-    const hint = last ? overloadHint(last.sets, re.sets, re.repHigh, last.top.weight) : null;
-    const w = hint ? hint.next : (last ? last.top.weight : 0);
+    const assist = e && e.kind === 'assist';
+    // u dopomoci je „nejlepší“ série ta s nejmenší dopomocí
+    const ref = last ? (assist ? last.sets.reduce((a,b) => b.weight < a.weight ? b : a, last.sets[0]) : last.top) : null;
+    const hint = last ? overloadHint(last.sets, re.sets, re.repHigh, ref.weight, assist) : null;
+    const w = hint ? hint.next : (ref ? ref.weight : 0);
     const lr = last && last.sets[0];
 
     // Už odškrtnuté série z rozpracovaného tréninku — bez tohohle by se
@@ -1616,7 +1627,9 @@ function renderWorkout(r){
   document.getElementById('w-body').innerHTML = r.exercises.map(re => {
     const e = exById(re.exerciseId);
     const last = lastPerformance(re.exerciseId, session.id);
-    const hint = last ? overloadHint(last.sets, re.sets, re.repHigh, last.top.weight) : null;
+    const assist = e && e.kind === 'assist';
+    const ref = last ? (assist ? last.sets.reduce((a,b) => b.weight < a.weight ? b : a, last.sets[0]) : last.top) : null;
+    const hint = last ? overloadHint(last.sets, re.sets, re.repHigh, ref.weight, assist) : null;
     const w = rows[re.id][0].weight;
     const prevNote = lastNote(re.exerciseId, session.id);
     const myNote = (session.notes && session.notes[re.exerciseId]) || '';
@@ -1645,7 +1658,7 @@ function renderWorkout(r){
           (last && last.sets[0] ? '<div class="lastrun">Minule ' + num(last.sets[0].dist||0) + ' km za ' + (last.sets[0].min||0) + ' min' +
             (last.sets[0].hr ? ' · ' + last.sets[0].hr + ' tepů' : '') + '</div>' : '')
         : '<div class="sgrid"><div class="shd"><span>#</span><span>Minule</span>' +
-            '<span class="ic">' + (e.kind === 'time' ? IC_TIME : IC_KG) + '</span><span class="ic">' + IC_REP + '</span><span></span></div>' +
+            '<span class="ic">' + (e.kind === 'time' ? IC_TIME : e.kind === 'assist' ? '<span style="font-size:8.5px;letter-spacing:.06em">DOPOM.</span>' : IC_KG) + '</span><span class="ic">' + IC_REP + '</span><span></span></div>' +
           rows[re.id].map((s,i) =>
             '<div class="srow' + (s.done ? ' done' : '') + '" id="row-' + re.id + '-' + i + '">' +
             '<span class="idx">' + (i+1) + '</span>' +
@@ -2175,6 +2188,7 @@ function mergePack(pack){
       if (hit.name !== pe.name){ delete byName[hit.name.toLowerCase()]; hit.name = pe.name; renamed++; }
       if (pe.desc) hit.desc = pe.desc;
       if (pe.muscle) hit.muscle = pe.muscle;
+      if (pe.kind && pe.kind !== hit.kind) hit.kind = pe.kind;
       byName[hit.name.toLowerCase()] = hit;
       return;
     }
