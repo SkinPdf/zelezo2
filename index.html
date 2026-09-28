@@ -95,6 +95,8 @@ h3{font-family:var(--disp);font-weight:500;font-size:17px;text-transform:upperca
 .seg button.on{background:var(--panel2);color:var(--chalk)}
 .phmark{width:10px;height:10px;color:#C9A66B;display:block}
 .phmark svg{width:10px;height:10px;display:block}
+.btnrow{display:flex;gap:8px;margin-top:14px}
+.btnrow .btn{flex:1;padding:13px 6px;font-size:14px}
 .pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}
 .pthumb{aspect-ratio:1;border-radius:9px;background:var(--panel2) center/cover no-repeat;border:1px solid var(--line)}
 .pview{display:block;width:100%;max-height:62vh;object-fit:contain;border-radius:12px;background:#000}
@@ -837,6 +839,7 @@ function pick(d){ sel = new Date(viewY, viewM, d); renderCalendar(); }
 
 const IC_CAM_MINI = '<svg viewBox="0 0 12 12"><rect x="1" y="3.2" width="10" height="7" rx="1.6" fill="currentColor"/><rect x="4" y="1.8" width="4" height="2" rx=".6" fill="currentColor"/><circle cx="6" cy="6.7" r="1.9" fill="#1E2226"/></svg>';
 const IC_CAM_INLINE = '<svg class="icon" style="display:inline-block;width:17px;height:17px;vertical-align:-3px;margin-right:6px" viewBox="0 0 24 24"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13.2" r="3.4"/></svg>';
+const IC_GAL_INLINE = '<svg class="icon" style="display:inline-block;width:17px;height:17px;vertical-align:-3px;margin-right:6px" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M4 18l5.5-5 4 3.5 3-2.5 4 4"/></svg>';
 const IC_STRETCH = '<svg viewBox="0 0 12 12"><path d="M2.5 6.2l2.3 2.3 4.7-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 /** Denní fajfka „strečink proveden" pro vybraný den (budoucí dny nejdou). */
@@ -1057,8 +1060,10 @@ function renderSessionDetail(){
                : photosFor(s.date).filter(p => !p.sessionId);
       return '<div class="sec">Fotky</div><div class="card">' +
         (ph.length ? thumbGrid(ph) : '<div class="muted">K tomuhle tréninku zatím žádná fotka.</div>') +
-        '<button class="btn ghost" style="margin-top:12px" onclick="takePhoto(\'' + s.date + '\',' + s.id + ')">' +
-        IC_CAM_INLINE + ' Přidat fotku</button></div>';
+        '<div class="btnrow">' +
+          '<button class="btn ghost" onclick="takePhoto(\'' + s.date + '\',' + s.id + ')">' + IC_CAM_INLINE + ' Vyfotit</button>' +
+          '<button class="btn ghost" onclick="pickPhotos(\'' + s.date + '\',' + s.id + ')">' + IC_GAL_INLINE + ' Z galerie</button>' +
+        '</div></div>';
     })() +
     '<div class="pad">' +
       '<button class="btn" onclick="shareCard(\'post\',' + s.id + ')">Sdílet výsledek</button>' +
@@ -2283,25 +2288,44 @@ function takePhoto(dateKey, sessionId){
   document.getElementById('camfile').click();
 }
 
-async function onPhotoPicked(file){
-  if (!file || !photoTarget) return;
+/** Otevře výběr z galerie, dá se označit víc fotek najednou. */
+function pickPhotos(dateKey, sessionId){
+  photoTarget = {date: dateKey, sessionId: sessionId || null};
+  document.getElementById('galfile').click();
+}
+
+async function onPhotosPicked(files){
+  const list = Array.from(files || []).filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|heic|heif)$/i.test(f.name || ''));
+  if (!list.length || !photoTarget) return;
+  const target = photoTarget;
+  let ok = 0;
+  for (const f of list){ photoTarget = target; if (await onPhotoPicked(f, true)) ok++; }
+  photoTarget = null;
+  toast(ok === list.length ? (ok === 1 ? 'Fotka přidána' : 'Přidáno ' + ok + ' fotek')
+                           : 'Přidáno ' + ok + ' z ' + list.length);
+}
+
+async function onPhotoPicked(file, quiet){
+  if (!file || !photoTarget) return false;
   const target = photoTarget; photoTarget = null;
-  toast('Ukládám fotku…');
+  if (!quiet) toast('Ukládám fotku…');
   try {
     // Originál se ukládá přesně tak, jak ho vrátil fotoaparát – plné rozlišení,
     // zpracování iPhonu, žádná další komprese. Zmenšuje se jen náhled do mřížky.
     const full = file;
     const thumb = await shrink(file, 480, 0.75);
-    const meta = {id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+    const meta = {id: Date.now() + '-' + Math.random().toString(36).slice(2, 9),
                   date: target.date, sessionId: target.sessionId, ts: Date.now()};
     await idbReq('blobs', 'readwrite', st => st.put({id: meta.id, full, thumb, type: file.type || 'image/jpeg', size: file.size}));
     await idbReq('meta', 'readwrite', st => st.put(meta));
     photoMeta.push(meta);
-    haptic(12); toast('Fotka uložena');
+    haptic(12); if (!quiet) toast('Fotka uložena');
     renderCalendar();
     if (detailId && document.getElementById('push').classList.contains('on')) renderSessionDetail();
+    return true;
   } catch(e){
-    toast('Fotku se nepodařilo uložit');
+    if (!quiet) toast('Fotku se nepodařilo uložit');
+    return false;
   }
 }
 
@@ -2398,8 +2422,12 @@ function renderPhotoBox(){
     '<div class="eyebrow">' + dateLabel(sel) + '</div>' +
     '<h2 style="font-size:22px;margin-top:4px">' + (list.length ? list.length + (list.length === 1 ? ' fotka' : list.length < 5 ? ' fotky' : ' fotek') : 'Bez fotek') + '</h2>' +
     (list.length ? thumbGrid(list) : '') +
-    (future ? '' : '<button class="btn" style="margin-top:14px" onclick="takePhoto(\'' + k + '\', (sessionFor(\'' + k + '\')||openSessionFor(\'' + k + '\')||{}).id)">' +
-      IC_CAM_INLINE + ' Vyfotit</button>') +
+    (future ? '' : (() => {
+      const sid = '(sessionFor(\'' + k + '\')||openSessionFor(\'' + k + '\')||{}).id';
+      return '<div class="btnrow">' +
+        '<button class="btn" onclick="takePhoto(\'' + k + '\',' + sid + ')">' + IC_CAM_INLINE + ' Vyfotit</button>' +
+        '<button class="btn ghost" onclick="pickPhotos(\'' + k + '\',' + sid + ')">' + IC_GAL_INLINE + ' Z galerie</button></div>';
+    })()) +
     '</div>';
   hydrateThumbs();
 }
@@ -2421,6 +2449,12 @@ cam.type = 'file'; cam.accept = 'image/*'; cam.setAttribute('capture', 'environm
 cam.id = 'camfile'; cam.style.display = 'none';
 cam.onchange = e => { onPhotoPicked(e.target.files[0]); e.target.value = ''; };
 document.body.appendChild(cam);
+
+const gal = document.createElement('input');
+gal.type = 'file'; gal.accept = 'image/*'; gal.multiple = true;
+gal.id = 'galfile'; gal.style.display = 'none';
+gal.onchange = e => { onPhotosPicked(e.target.files); e.target.value = ''; };
+document.body.appendChild(gal);
 
 renderCalendar(); renderRoutines(); renderExercises(); renderProgress();
 loadPhotoMeta();
