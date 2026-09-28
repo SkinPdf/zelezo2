@@ -6,9 +6,9 @@
 <title>Železo</title>
 
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#16181B">
+<meta name="theme-color" content="#121417">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Železo">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
@@ -35,7 +35,7 @@ html{height:100%;background:#121417;overscroll-behavior:none}
 /* Aplikace je přišpendlená ke všem čtyřem okrajům displeje. Na iPhonu v režimu
    z plochy se height:100% nepočítá až k hraně, proto ho nepoužíváme. */
 body{
-  position:fixed;top:0;right:0;left:0;height:var(--app-h,100%);
+  position:fixed;top:0;right:0;bottom:0;left:0;
   background:var(--iron);color:var(--chalk);font-family:var(--body);
   -webkit-font-smoothing:antialiased;
   display:flex;flex-direction:column;
@@ -2192,24 +2192,7 @@ if ('serviceWorker' in navigator){
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
 
-/* Výška aplikace.
-   iOS v režimu z plochy se zprůhledněnou stavovou lištou (black-translucent)
-   hlásí výšku okna o výšku stavové lišty menší, než je displej – pod tab barem
-   pak zůstane prázdný pás. V tom režimu proto bereme skutečnou výšku displeje. */
-function fitHeight(){
-  const standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
-                     navigator.standalone === true;
-  const portrait = window.innerHeight >= window.innerWidth;
-  let h = window.innerHeight;
-  if (standalone && /iPhone|iPad|iPod/.test(navigator.userAgent || '')){
-    const screenH = portrait ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
-    if (screenH > h) h = screenH;
-  }
-  document.documentElement.style.setProperty('--app-h', h + 'px');
-}
-fitHeight();
-window.addEventListener('resize', fitHeight);
-window.addEventListener('orientationchange', () => setTimeout(fitHeight, 250));
+/* Výška: stránka vyplňuje okno aplikace, rozměry řeší iOS. */
 
 /* Požádáme prohlížeč, ať data nemaže při úklidu místa. Safari to dává
    nainstalovaným aplikacím, otevřeným v prohlížeči většinou ne. */
