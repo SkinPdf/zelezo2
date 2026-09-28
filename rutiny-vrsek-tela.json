@@ -646,6 +646,13 @@
           "repLow": 15,
           "repHigh": 20,
           "rest": 60
+        },
+        {
+          "name": "Cable crunch",
+          "sets": 2,
+          "repLow": 12,
+          "repHigh": 15,
+          "rest": 60
         }
       ]
     },
