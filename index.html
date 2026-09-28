@@ -90,6 +90,14 @@ h3{font-family:var(--disp);font-weight:500;font-size:17px;text-transform:upperca
 .day{border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-family:var(--mono);font-size:13.5px;color:var(--muted);position:relative;padding-top:2px}
 .day.empty{visibility:hidden}
 .day .dot{width:6px;height:6px;border-radius:50%}
+.seg{display:flex;margin:0 12px 10px;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:3px}
+.seg button{flex:1;padding:9px 0;border-radius:8px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.seg button.on{background:var(--panel2);color:var(--chalk)}
+.phmark{width:10px;height:10px;color:#C9A66B;display:block}
+.phmark svg{width:10px;height:10px;display:block}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}
+.pthumb{aspect-ratio:1;border-radius:9px;background:var(--panel2) center/cover no-repeat;border:1px solid var(--line)}
+.pview{display:block;width:100%;max-height:62vh;object-fit:contain;border-radius:12px;background:#000}
 .day .marks{display:flex;align-items:center;gap:3px;height:9px}
 .stmark{width:9px;height:9px;color:#8FB8C9;display:block}
 .stmark svg{width:9px;height:9px;display:block}
@@ -272,6 +280,11 @@ h3{font-family:var(--disp);font-weight:500;font-size:17px;text-transform:upperca
     </button>
   </div>
 
+  <div class="seg" id="calseg">
+    <button data-m="train" onclick="setCalMode('train')">Tréninky</button>
+    <button data-m="photo" onclick="setCalMode('photo')">Fotky</button>
+  </div>
+
   <div class="calwrap">
     <div class="calnav">
       <button onclick="shiftMonth(-1)" aria-label="Předchozí měsíc">‹</button>
@@ -285,6 +298,7 @@ h3{font-family:var(--disp);font-weight:500;font-size:17px;text-transform:upperca
 
   <div id="stretchrow"></div>
   <div id="daycard" style="margin-top:12px"></div>
+  <div id="photobox" style="margin-top:12px"></div>
 
   <div class="sec">Posledních 7 dní</div>
   <div class="card" id="weekstats"></div>
@@ -345,6 +359,9 @@ h3{font-family:var(--disp);font-weight:500;font-size:17px;text-transform:upperca
     <div class="stripe" id="w-stripe"></div>
     <h2 class="ttl" id="w-title">Trénink</h2>
     <div class="clock" id="w-clock">00:00</div>
+    <button class="iconbtn" onclick="takePhoto(session.date, session.id)" aria-label="Vyfotit">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13.2" r="3.4"/></svg>
+    </button>
     <button onclick="quitWorkout()" style="color:var(--muted);padding-left:4px" aria-label="Zavřít">
       <svg class="icon" style="width:22px;height:22px" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
@@ -801,16 +818,25 @@ function renderCalendar(){
       ? '<div class="dot ' + (done ? '' : 'plan') + '" style="' + (done ? 'background:' : 'color:') + r.color + '"></div>'
       : '';
     const st = D.stretch && D.stretch[k] ? '<span class="stmark" aria-label="strečink">' + IC_STRETCH + '</span>' : '';
+    const pc = photoMeta.some(p => p.date === k) ? '<span class="phmark" aria-label="fotka">' + IC_CAM_MINI + '</span>' : '';
+    const marks = calMode === 'photo' ? pc : dot + st + pc;
     g.insertAdjacentHTML('beforeend',
       '<button class="day ' + (+dt === +T0 ? 'today ' : '') + (k === key(sel) ? 'sel' : '') + '" onclick="pick(' + d + ')">' + d +
-      '<span class="marks">' + dot + st + '</span></button>');
+      '<span class="marks">' + marks + '</span></button>');
   }
-  renderDayCard();
+  document.querySelectorAll('#calseg button').forEach(b => b.classList.toggle('on', b.dataset.m === calMode));
+  const photo = calMode === 'photo';
+  document.getElementById('stretchrow').style.display = photo ? 'none' : '';
+  document.getElementById('daycard').style.display = photo ? 'none' : '';
+  document.getElementById('photobox').style.display = photo ? '' : 'none';
+  if (photo) renderPhotoBox(); else { document.getElementById('photobox').innerHTML = ''; renderDayCard(); }
   renderWeekStats();
 }
 
 function pick(d){ sel = new Date(viewY, viewM, d); renderCalendar(); }
 
+const IC_CAM_MINI = '<svg viewBox="0 0 12 12"><rect x="1" y="3.2" width="10" height="7" rx="1.6" fill="currentColor"/><rect x="4" y="1.8" width="4" height="2" rx=".6" fill="currentColor"/><circle cx="6" cy="6.7" r="1.9" fill="#1E2226"/></svg>';
+const IC_CAM_INLINE = '<svg class="icon" style="display:inline-block;width:17px;height:17px;vertical-align:-3px;margin-right:6px" viewBox="0 0 24 24"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13.2" r="3.4"/></svg>';
 const IC_STRETCH = '<svg viewBox="0 0 12 12"><path d="M2.5 6.2l2.3 2.3 4.7-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 /** Denní fajfka „strečink proveden" pro vybraný den (budoucí dny nejdou). */
@@ -1026,11 +1052,20 @@ function renderSessionDetail(){
         esc(sum.prs.map(p => p.name + ' ' + num(p.weight) + ' kg').join(', ')) + '</span></div>' : '') +
     '</div>' +
     '<div class="sec">Odcvičeno</div>' + (blocks || '<div class="empty"><h3>Bez záznamu sérií</h3></div>') +
+    (() => {
+      const ph = photosForSession(s.id).length ? photosForSession(s.id)
+               : photosFor(s.date).filter(p => !p.sessionId);
+      return '<div class="sec">Fotky</div><div class="card">' +
+        (ph.length ? thumbGrid(ph) : '<div class="muted">K tomuhle tréninku zatím žádná fotka.</div>') +
+        '<button class="btn ghost" style="margin-top:12px" onclick="takePhoto(\'' + s.date + '\',' + s.id + ')">' +
+        IC_CAM_INLINE + ' Přidat fotku</button></div>';
+    })() +
     '<div class="pad">' +
       '<button class="btn" onclick="shareCard(\'post\',' + s.id + ')">Sdílet výsledek</button>' +
       '<button class="btn ghost gap" onclick="reopenSession(' + s.id + ')">Upravit trénink</button>' +
       '<button class="btn danger gap" onclick="deleteSession(' + s.id + ')">Smazat záznam</button>' +
     '</div>';
+  hydrateThumbs();
 }
 
 /** Znovu otevře dokončený trénink, aby šlo opravit překlep. */
@@ -2063,7 +2098,7 @@ function openSettings(){
     '<span>Prohlížeč nepovolil trvalé úložiště — data se po zavření ztratí. Otevři appku přes ikonu na ploše.</span></div>';
   openModal('<h2 style="font-size:20px">Nastavení</h2>' + diag + warn +
     '<div class="muted" style="margin:10px 0 14px;line-height:1.5">Data jsou uložená jen v tomhle telefonu. ' +
-    'Záloha se hodí před výměnou zařízení nebo mazáním dat prohlížeče.</div>' +
+    'Záloha se hodí před výměnou zařízení nebo mazáním dat prohlížeče. Fotky v záloze nejsou.</div>' +
     '<button class="btn ghost" onclick="loadRecommended()">Načíst doporučené rutiny</button>' +
     '<div class="muted" style="margin:8px 0 14px;font-size:11.5px;line-height:1.5">Stáhne aktuální program ' +
     'a přidá ho k tomu, co už máš. Nic nesmaže.</div>' +
@@ -2174,6 +2209,201 @@ function resetAll(){
   toast('Vymazáno');
 }
 
+
+/* ================================================================
+   FOTKY
+   Do localStorage se fotky nevejdou (limit ~5 MB), proto IndexedDB.
+   Store 'meta' drží jen malé záznamy {id, date, sessionId, ts} – ty se
+   načtou při startu kvůli kalendáři. Store 'blobs' drží samotné obrázky
+   (zmenšená fotka + náhled) a čte se až při zobrazení.
+   ================================================================ */
+const PHOTO_DB = 'zelezo-photos';
+let photoMeta = [];              // všechna metadata v paměti
+const thumbUrls = {};            // id → objectURL náhledu (cache)
+let photoDbP = null;
+
+function photoDb(){
+  if (photoDbP) return photoDbP;
+  photoDbP = new Promise((res, rej) => {
+    if (!('indexedDB' in window)) return rej(new Error('IndexedDB není k dispozici'));
+    const rq = indexedDB.open(PHOTO_DB, 1);
+    rq.onupgradeneeded = () => {
+      const db = rq.result;
+      if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta', {keyPath:'id'});
+      if (!db.objectStoreNames.contains('blobs')) db.createObjectStore('blobs', {keyPath:'id'});
+    };
+    rq.onsuccess = () => res(rq.result);
+    rq.onerror = () => rej(rq.error);
+  });
+  return photoDbP;
+}
+
+function idbReq(store, mode, fn){
+  return photoDb().then(db => new Promise((res, rej) => {
+    const tx = db.transaction(store, mode), st = tx.objectStore(store);
+    const r = fn(st);
+    tx.oncomplete = () => res(r && 'result' in r ? r.result : undefined);
+    tx.onerror = () => rej(tx.error);
+  }));
+}
+
+async function loadPhotoMeta(){
+  try {
+    photoMeta = (await idbReq('meta', 'readonly', st => st.getAll())) || [];
+  } catch(e){ photoMeta = []; }
+  renderCalendar();
+}
+
+const photosFor = k => photoMeta.filter(p => p.date === k).sort((a,b) => a.ts - b.ts);
+const photosForSession = id => photoMeta.filter(p => p.sessionId === id).sort((a,b) => a.ts - b.ts);
+
+/** Zmenší obrázek na zadanou delší stranu a vrátí JPEG blob. */
+function shrink(file, maxSide, quality){
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob(b => b ? res(b) : rej(new Error('převod selhal')), 'image/jpeg', quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('fotku nejde načíst')); };
+    img.src = url;
+  });
+}
+
+/* Kam se právě focená fotka přiřadí. */
+let photoTarget = null;
+
+/** Otevře rovnou fotoaparát (na iPhonu capture="environment"). */
+function takePhoto(dateKey, sessionId){
+  photoTarget = {date: dateKey, sessionId: sessionId || null};
+  document.getElementById('camfile').click();
+}
+
+async function onPhotoPicked(file){
+  if (!file || !photoTarget) return;
+  const target = photoTarget; photoTarget = null;
+  toast('Ukládám fotku…');
+  try {
+    // Originál se ukládá přesně tak, jak ho vrátil fotoaparát – plné rozlišení,
+    // zpracování iPhonu, žádná další komprese. Zmenšuje se jen náhled do mřížky.
+    const full = file;
+    const thumb = await shrink(file, 480, 0.75);
+    const meta = {id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+                  date: target.date, sessionId: target.sessionId, ts: Date.now()};
+    await idbReq('blobs', 'readwrite', st => st.put({id: meta.id, full, thumb, type: file.type || 'image/jpeg', size: file.size}));
+    await idbReq('meta', 'readwrite', st => st.put(meta));
+    photoMeta.push(meta);
+    haptic(12); toast('Fotka uložena');
+    renderCalendar();
+    if (detailId && document.getElementById('push').classList.contains('on')) renderSessionDetail();
+  } catch(e){
+    toast('Fotku se nepodařilo uložit');
+  }
+}
+
+/** Vloží náhledy do všech prvků s data-photo, jakmile se načtou. */
+async function hydrateThumbs(){
+  const els = document.querySelectorAll('[data-photo]');
+  for (const el of els){
+    const id = el.getAttribute('data-photo');
+    if (!thumbUrls[id]){
+      try {
+        const rec = await idbReq('blobs', 'readonly', st => st.get(id));
+        if (rec) thumbUrls[id] = URL.createObjectURL(rec.thumb);
+      } catch(e){}
+    }
+    if (thumbUrls[id]) el.style.backgroundImage = 'url(' + thumbUrls[id] + ')';
+  }
+}
+
+function thumbGrid(list){
+  return '<div class="pgrid">' + list.map(p =>
+    '<button class="pthumb" data-photo="' + p.id + '" onclick="openPhoto(\'' + p.id + '\')" aria-label="Fotka"></button>').join('') + '</div>';
+}
+
+let viewerUrl = null;
+function showRes(){
+  const img = document.getElementById('pviewimg'), el = document.getElementById('pviewres');
+  if (img && el && img.naturalWidth) el.textContent = img.naturalWidth + ' × ' + img.naturalHeight + ' px · ' + el.textContent;
+}
+async function openPhoto(id){
+  const p = photoMeta.find(x => x.id === id);
+  if (!p) return;
+  let url = '';
+  try {
+    const rec = await idbReq('blobs', 'readonly', st => st.get(id));
+    if (viewerUrl) URL.revokeObjectURL(viewerUrl);
+    viewerUrl = url = URL.createObjectURL(rec.full);
+  } catch(e){}
+  let rec = null;
+  try { rec = await idbReq('blobs', 'readonly', st => st.get(id)); } catch(e){}
+  const s = p.sessionId ? D.sessions.find(x => x.id === p.sessionId) : null;
+  const r = s ? routineById(s.routineId) : null;
+  const t = new Date(p.ts);
+  const mb = rec && rec.full ? (rec.full.size / 1048576).toFixed(1).replace('.', ',') + ' MB' : '';
+  openModal('<img class="pview" id="pviewimg" src="' + url + '" alt="" onload="showRes()">' +
+    '<div class="muted" style="margin-top:10px">' + dateLabel(fromKey(p.date)) + ' · ' +
+      String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0') +
+      (r ? ' · ' + esc(r.name) : '') + '</div>' +
+    '<div class="data" id="pviewres" style="margin-top:3px">' + mb + '</div>' +
+    '<button class="btn" style="margin-top:14px" onclick="savePhoto(\'' + id + '\')">Uložit do Fotek</button>' +
+    '<button class="btn danger gap" onclick="deletePhoto(\'' + id + '\')">Smazat fotku</button>' +
+    '<button class="btn ghost gap" onclick="closeModal()">Zavřít</button>');
+}
+
+/** Pošle originál do systémového sdílení – odtud „Uložit obrázek“ do Fotek v plném rozlišení. */
+async function savePhoto(id){
+  try {
+    const rec = await idbReq('blobs', 'readonly', st => st.get(id));
+    const p = photoMeta.find(x => x.id === id);
+    const type = rec.type || rec.full.type || 'image/jpeg';
+    const ext = type.includes('heic') ? 'heic' : type.includes('png') ? 'png' : 'jpg';
+    const file = new File([rec.full], 'zelezo-' + p.date + '-' + id.slice(-5) + '.' + ext, {type});
+    if (navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file]});
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(file); a.download = file.name; a.click();
+  } catch(e){
+    if (!e || e.name !== 'AbortError') toast('Fotku se nepodařilo uložit');
+  }
+}
+
+async function deletePhoto(id){
+  if (!confirm('Smazat fotku?')) return;
+  try {
+    await idbReq('blobs', 'readwrite', st => st.delete(id));
+    await idbReq('meta', 'readwrite', st => st.delete(id));
+  } catch(e){}
+  photoMeta = photoMeta.filter(p => p.id !== id);
+  if (thumbUrls[id]){ URL.revokeObjectURL(thumbUrls[id]); delete thumbUrls[id]; }
+  closeModal(); renderCalendar();
+  if (detailId && document.getElementById('push').classList.contains('on')) renderSessionDetail();
+  toast('Fotka smazána');
+}
+
+/* ---------- přepínač Tréninky / Fotky v kalendáři ---------- */
+let calMode = 'train';
+function setCalMode(m){ calMode = m; renderCalendar(); }
+
+function renderPhotoBox(){
+  const box = document.getElementById('photobox'), k = key(sel);
+  const list = photosFor(k), future = sel > today();
+  box.innerHTML = '<div class="card">' +
+    '<div class="eyebrow">' + dateLabel(sel) + '</div>' +
+    '<h2 style="font-size:22px;margin-top:4px">' + (list.length ? list.length + (list.length === 1 ? ' fotka' : list.length < 5 ? ' fotky' : ' fotek') : 'Bez fotek') + '</h2>' +
+    (list.length ? thumbGrid(list) : '') +
+    (future ? '' : '<button class="btn" style="margin-top:14px" onclick="takePhoto(\'' + k + '\', (sessionFor(\'' + k + '\')||openSessionFor(\'' + k + '\')||{}).id)">' +
+      IC_CAM_INLINE + ' Vyfotit</button>') +
+    '</div>';
+  hydrateThumbs();
+}
+
 /* ================================================================
    START
    ================================================================ */
@@ -2186,7 +2416,14 @@ fi.type = 'file'; fi.accept = 'application/json'; fi.id = 'importfile'; fi.style
 fi.onchange = e => { if (e.target.files[0]) importData(e.target.files[0]); };
 document.body.appendChild(fi);
 
+const cam = document.createElement('input');
+cam.type = 'file'; cam.accept = 'image/*'; cam.setAttribute('capture', 'environment');
+cam.id = 'camfile'; cam.style.display = 'none';
+cam.onchange = e => { onPhotoPicked(e.target.files[0]); e.target.value = ''; };
+document.body.appendChild(cam);
+
 renderCalendar(); renderRoutines(); renderExercises(); renderProgress();
+loadPhotoMeta();
 
 if ('serviceWorker' in navigator){
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
