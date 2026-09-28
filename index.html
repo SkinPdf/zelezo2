@@ -29,12 +29,17 @@
   --bot:env(safe-area-inset-bottom,0px);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overscroll-behavior:none}
+/* Kořen má barvu tab baru, takže kdyby cokoliv prosvítalo u spodní hrany,
+   splyne to s lištou místo tmavého pruhu. */
+html{height:100%;background:#121417;overscroll-behavior:none}
+/* Aplikace je přišpendlená ke všem čtyřem okrajům displeje. Na iPhonu v režimu
+   z plochy se height:100% nepočítá až k hraně, proto ho nepoužíváme. */
 body{
+  position:fixed;top:0;right:0;left:0;height:var(--app-h,100%);
   background:var(--iron);color:var(--chalk);font-family:var(--body);
   -webkit-font-smoothing:antialiased;
   display:flex;flex-direction:column;
-  max-width:520px;margin:0 auto;position:relative;overflow:hidden;
+  max-width:520px;margin:0 auto;overflow:hidden;overscroll-behavior:none;
 }
 button,input,select{font:inherit;color:inherit}
 button{background:none;border:none;cursor:pointer}
@@ -85,6 +90,17 @@ h3{font-family:var(--disp);font-weight:500;font-size:17px;text-transform:upperca
 .day{border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-family:var(--mono);font-size:13.5px;color:var(--muted);position:relative;padding-top:2px}
 .day.empty{visibility:hidden}
 .day .dot{width:6px;height:6px;border-radius:50%}
+.day .marks{display:flex;align-items:center;gap:3px;height:9px}
+.stmark{width:9px;height:9px;color:#8FB8C9;display:block}
+.stmark svg{width:9px;height:9px;display:block}
+.stretchrow{display:flex;align-items:center;gap:12px;margin:12px 12px 0;width:calc(100% - 24px);padding:13px 16px;
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;text-align:left}
+.stretchrow .sbox{width:26px;height:26px;border-radius:8px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;color:#fff;flex:none}
+.stretchrow .sbox svg{width:15px;height:15px}
+.stretchrow.on .sbox{background:#5E8FA3;border-color:#5E8FA3}
+.stretchrow .slbl{flex:1;font-size:14.5px}
+.stretchrow .sstate{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.stretchrow.on .sstate{color:#8FB8C9}
 .day .dot.plan{background:transparent!important;box-shadow:inset 0 0 0 1.5px currentColor}
 .day.today{color:var(--chalk)}
 .day.today::after{content:'';position:absolute;inset:2px;border-radius:8px;border:1px dashed var(--line)}
@@ -104,7 +120,7 @@ h3{font-family:var(--disp);font-weight:500;font-size:17px;text-transform:upperca
 .row{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid #232830;width:100%;text-align:left}
 .row .tag{width:3px;height:26px;border-radius:2px;flex:none}
 .row .n{flex:1;font-size:14.5px;min-width:0}
-.exitem{border-bottom:1px solid #232831}
+.exitem{border-bottom:1px solid #232830}
 .exitem .row{border-bottom:none}
 .desc{display:none;padding:0 18px 14px 33px;font-size:13px;color:var(--muted);line-height:1.55}
 .desc.open{display:block}
@@ -121,6 +137,10 @@ h3{font-family:var(--disp);font-weight:500;font-size:17px;text-transform:upperca
 .diag div{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
 .diag span{color:var(--muted)}
 .diag b{font-family:var(--mono);font-size:12.5px;font-weight:400;text-align:right}
+.logrow{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.logrow:last-child{border-bottom:none}
+.logrow .axis{flex:none;width:86px}
+.logtxt{font-size:13px;line-height:1.45;color:var(--chalk);min-width:0}
 .exbtn{width:30px;height:30px;border:1px solid var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex:none}
 .exbtn .icon{width:15px;height:15px}
 .stepper button{width:32px;height:32px;border:1px solid var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:16px}
@@ -263,7 +283,8 @@ h3{font-family:var(--disp);font-weight:500;font-size:17px;text-transform:upperca
     <div class="grid" id="grid"></div>
   </div>
 
-  <div id="daycard" style="margin-top:14px"></div>
+  <div id="stretchrow"></div>
+  <div id="daycard" style="margin-top:12px"></div>
 
   <div class="sec">Posledních 7 dní</div>
   <div class="card" id="weekstats"></div>
@@ -778,15 +799,38 @@ function renderCalendar(){
     const r = done ? routineById(done.routineId) : plannedFor(k);
     const dot = r
       ? '<div class="dot ' + (done ? '' : 'plan') + '" style="' + (done ? 'background:' : 'color:') + r.color + '"></div>'
-      : '<div class="dot"></div>';
+      : '';
+    const st = D.stretch && D.stretch[k] ? '<span class="stmark" aria-label="strečink">' + IC_STRETCH + '</span>' : '';
     g.insertAdjacentHTML('beforeend',
-      '<button class="day ' + (+dt === +T0 ? 'today ' : '') + (k === key(sel) ? 'sel' : '') + '" onclick="pick(' + d + ')">' + d + dot + '</button>');
+      '<button class="day ' + (+dt === +T0 ? 'today ' : '') + (k === key(sel) ? 'sel' : '') + '" onclick="pick(' + d + ')">' + d +
+      '<span class="marks">' + dot + st + '</span></button>');
   }
   renderDayCard();
   renderWeekStats();
 }
 
 function pick(d){ sel = new Date(viewY, viewM, d); renderCalendar(); }
+
+const IC_STRETCH = '<svg viewBox="0 0 12 12"><path d="M2.5 6.2l2.3 2.3 4.7-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+/** Denní fajfka „strečink proveden" pro vybraný den (budoucí dny nejdou). */
+function renderStretchRow(){
+  const k = key(sel), done = !!(D.stretch && D.stretch[k]);
+  const future = sel > today();
+  const label = +sel === +today() ? 'Strečink dnes' : 'Strečink · ' + dateLabel(sel);
+  document.getElementById('stretchrow').innerHTML = future ? '' :
+    '<button class="stretchrow' + (done ? ' on' : '') + '" onclick="toggleStretch()">' +
+      '<span class="sbox">' + (done ? IC_STRETCH : '') + '</span>' +
+      '<span class="slbl">' + label + '</span>' +
+      '<span class="sstate">' + (done ? 'hotovo' : 'odfajfkuj') + '</span></button>';
+}
+
+function toggleStretch(){
+  if (!D.stretch) D.stretch = {};
+  const k = key(sel);
+  if (D.stretch[k]) delete D.stretch[k]; else D.stretch[k] = true;
+  save(); haptic(10); renderCalendar();
+}
 function shiftMonth(n){
   viewM += n;
   if (viewM < 0){ viewM = 11; viewY--; }
@@ -798,6 +842,7 @@ function shiftMonth(n){
 function jumpToday(){ const t = today(); viewY = t.getFullYear(); viewM = t.getMonth(); sel = t; renderCalendar(); }
 
 function renderDayCard(){
+  renderStretchRow();
   const k = key(sel), box = document.getElementById('daycard');
   const done = sessionFor(k);
   const r = done ? routineById(done.routineId) : plannedFor(k);
@@ -939,7 +984,8 @@ function renderSessionDetail(){
   const color = r ? r.color : 'var(--line)';
 
   // série seskupené po cvicích, v pořadí podle rutiny
-  const order = r ? r.exercises.map(x => x.exerciseId) : [];
+  // pořadí, ve kterém se tehdy cvičilo – ne dnešní pořadí rutiny
+  const order = s.order || (r ? r.exercises.map(x => x.exerciseId) : []);
   const ids = [...new Set(s.logs.map(l => l.exerciseId))]
     .sort((a,b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99));
 
@@ -1037,8 +1083,17 @@ function renderEditor(){
     '</div>' +
     '<div class="sec">Cviky</div>' +
     (r.exercises.length ? rows : '<div class="empty"><h3>Prázdná rutina</h3><p>Přidej první cvik z knihovny.</p></div>') +
-    '<div class="pad"><button class="btn ghost" onclick="pickExerciseFor()">+ Přidat cvik</button>' +
-    '<button class="btn danger gap" onclick="deleteRoutine()">Smazat rutinu</button></div>';
+    '<div class="pad"><button class="btn ghost" onclick="pickExerciseFor()">+ Přidat cvik</button></div>' +
+    historyBlock(r) +
+    '<div class="pad" style="margin-top:18px"><button class="btn danger" onclick="deleteRoutine()">Smazat rutinu</button></div>';
+}
+
+function historyBlock(r){
+  const h = routineHistory(r.id);
+  if (!h.length) return '';
+  return '<div class="sec">Historie změn</div><div class="card" style="padding:4px 16px">' +
+    h.map(x => '<div class="logrow"><span class="axis">' + fmtWhen(x.ts) + '</span>' +
+      '<span class="logtxt">' + esc(x.text) + '</span></div>').join('') + '</div>';
 }
 const stepper = (label, val, kind, id, field) =>
   '<div class="stepper"><span class="lbl">' + label + '</span>' +
@@ -1048,6 +1103,10 @@ const stepper = (label, val, kind, id, field) =>
 
 function bump(reId, field, dir){
   const r = routineById(editId), re = r.exercises.find(x => x.id === reId);
+  const show = x => field === 'sets' ? String(x.sets)
+    : field === 'rest' ? x.rest + ' s'
+    : (x.repLow === x.repHigh ? String(x.repLow) : x.repLow + '–' + x.repHigh);
+  const before = show(re);
   if (field === 'sets') re.sets = Math.min(12, Math.max(1, re.sets + dir));
   if (field === 'reps'){
     if (dir < 0) re.repLow = Math.max(1, re.repLow - 1);
@@ -1055,16 +1114,66 @@ function bump(reId, field, dir){
     if (re.repHigh < re.repLow) re.repHigh = re.repLow;
   }
   if (field === 'rest') re.rest = Math.min(600, Math.max(30, re.rest + dir*15));
+  const after = show(re);
+  if (before !== after){
+    const label = {sets:'série', reps:'opakování', rest:'pauza'}[field], name = exName(re.exerciseId);
+    logRoutine(r, {key:'bump:' + reId + ':' + field, from: before, to: after,
+      render: e => name + ' – ' + label + ' ' + e.from + ' → ' + e.to});
+  }
   save(); renderEditor();
 }
-function renameRoutine(v){ routineById(editId).name = v.trim() || 'Rutina'; save(); renderRoutines(); }
+function renameRoutine(v){
+  const r = routineById(editId), old = r.name;
+  r.name = v.trim() || 'Rutina';
+  if (old !== r.name) logRoutine(r, {text:'Přejmenováno z „' + old + '"'});
+  save(); renderRoutines(); renderEditor();
+}
 function recolor(c){ routineById(editId).color = c; save(); renderEditor(); renderRoutines(); }
+/* ---------- historie změn rutin ---------- */
+const exName = id => { const e = exById(id); return e ? e.name : 'smazaný cvik'; };
+const MERGE_MS = 3 * 60 * 1000;
+
+/**
+ * Zapíše změnu rutiny. Když je poslední záznam stejného druhu a týká se téhož
+ * cviku (třeba opakované klikání na šipku), jen se aktualizuje – jinak by jeden
+ * přesun o čtyři místa vyrobil čtyři řádky.
+ */
+function logRoutine(r, entry){
+  if (!D.routineLog) D.routineLog = [];
+  const now = Date.now();
+  const last = D.routineLog[D.routineLog.length - 1];
+  if (last && entry.key && last.key === entry.key && last.routineId === r.id && now - last.ts < MERGE_MS){
+    Object.assign(last, entry, {ts: now, from: last.from});
+    last.text = entry.render(last);
+  } else {
+    const rec = Object.assign({ts: now, routineId: r.id, routineName: r.name}, entry);
+    rec.text = entry.render ? entry.render(rec) : entry.text;
+    D.routineLog.push(rec);
+  }
+  const L = D.routineLog[D.routineLog.length - 1];
+  delete L.render;
+  if (D.routineLog.length > 300) D.routineLog = D.routineLog.slice(-300);
+}
+
+function routineHistory(routineId, limit = 25){
+  return (D.routineLog || []).filter(x => x.routineId === routineId).slice(-limit).reverse();
+}
+
+function fmtWhen(ts){
+  const d = new Date(ts), day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  return shortDate(key(day)) + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+
 /** Posune cvik v rutině nahoru nebo dolů. */
 function moveEx(reId, dir){
-  const list = routineById(editId).exercises;
+  const r = routineById(editId), list = r.exercises;
   const i = list.findIndex(x => x.id === reId), j = i + dir;
   if (i < 0 || j < 0 || j >= list.length) return;
   [list[i], list[j]] = [list[j], list[i]];
+  const name = exName(list[j].exerciseId);
+  logRoutine(r, {key:'move:' + reId, from: i + 1, to: j + 1,
+    render: e => e.from === e.to ? name + ' zůstal na ' + e.to + '. místě'
+                                 : name + ': ' + e.from + '. → ' + e.to + '. místo'});
   save(); renderEditor(); haptic(8);
 }
 
@@ -1073,7 +1182,8 @@ let swapTarget = null;
 function swapEx(reId){ swapTarget = reId; pickExerciseFor(); }
 
 function delRoutineEx(reId){
-  const r = routineById(editId);
+  const r = routineById(editId), re = r.exercises.find(x => x.id === reId);
+  if (re) logRoutine(r, {text:'Odebrán ' + exName(re.exerciseId)});
   r.exercises = r.exercises.filter(x => x.id !== reId);
   save(); renderEditor();
 }
@@ -1113,12 +1223,16 @@ function addExToRoutine(exId){
   const e = exById(exId), r = routineById(editId);
   if (swapTarget){
     const slot = r.exercises.find(x => x.id === swapTarget);
-    if (slot) slot.exerciseId = exId;
+    if (slot && slot.exerciseId !== exId){
+      logRoutine(r, {text: exName(slot.exerciseId) + ' vyměněn za ' + e.name});
+      slot.exerciseId = exId;
+    }
     swapTarget = null;
   } else {
     r.exercises.push({id:uid(), exerciseId:exId, sets:3,
       repLow: e.kind === 'time' ? 30 : 8, repHigh: e.kind === 'time' ? 45 : 12,
       rest: e.kind === 'time' ? 60 : 120});
+    logRoutine(r, {text:'Přidán ' + e.name + ' na ' + r.exercises.length + '. místo'});
   }
   save(); closeModal(); renderEditor();
 }
@@ -1397,7 +1511,8 @@ function startWorkout(routineId, dateKey){
   const r = routineById(routineId);
   session = openSessionFor(dateKey);
   if (!session){
-    session = {id:uid(), date:dateKey, routineId, durationS:0, finished:false, logs:[], notes:{}};
+    session = {id:uid(), date:dateKey, routineId, durationS:0, finished:false, logs:[], notes:{}, draft:{},
+      order: r.exercises.map(x => x.exerciseId)};
     D.sessions.push(session); save();
   }
 
@@ -1414,16 +1529,19 @@ function startWorkout(routineId, dateKey){
     // po návratu tvářily jako neodcvičené, i když v databázi jsou.
     const saved = {};
     session.logs.filter(l => l.exerciseId === re.exerciseId).forEach(l => { saved[l.setIndex] = l; });
+    const draft = (session.draft && session.draft[re.id]) || [];
 
-    const count = Math.max(re.sets, ...Object.keys(saved).map(k => +k + 1), 0);
+    const count = Math.max(re.sets, draft.length, ...Object.keys(saved).map(k => +k + 1), 0);
     rows[re.id] = Array.from({length: count}, (_, i) => {
-      const s = saved[i];
+      const s = saved[i], dr = draft[i];
       if (cardio){
         if (s) return {dist:num(s.dist||0), min:String(s.min||0), hr:s.hr?String(s.hr):'', weight:'0', reps:'0', done:true};
+        if (dr) return Object.assign({}, dr, {done:false});
         return {dist: lr ? num(lr.dist||0) : '5', min: lr ? String(lr.min||30) : '30',
                 hr: lr ? String(lr.hr||'') : '', weight:'0', reps:'0', done:false};
       }
       if (s) return {weight:num(s.weight), reps:String(s.reps), done:true};
+      if (dr) return Object.assign({}, dr, {done:false});
       return {weight:num(w), reps:String(re.repLow), done:false};
     });
   });
@@ -1472,16 +1590,16 @@ function renderWorkout(r){
       (prevNote ? '<div class="notelast">' + IC_NOTE + '<span>' + esc(prevNote) + '</span></div>' : '') +
       '<div class="notebox' + (myNote ? ' open' : '') + '" id="note-' + re.id + '">' +
         '<textarea rows="2" placeholder="Poznámka pro příští trénink" ' +
-        'onchange="setNote(' + re.exerciseId + ',this.value)">' + esc(myNote) + '</textarea></div>' +
+        'oninput="setNote(' + re.exerciseId + ',this.value)">' + esc(myNote) + '</textarea></div>' +
       (e.kind === 'cardio'
         ? '<div class="sgrid"><div class="shd cardio"><span>#</span>' +
             '<span class="ic">' + IC_DIST + '</span><span class="ic">' + IC_TIME + '</span><span class="ic">' + IC_HR + '</span><span></span></div>' +
           rows[re.id].map((s,i) =>
             '<div class="srow cardio' + (s.done ? ' done' : '') + '" id="row-' + re.id + '-' + i + '">' +
             '<span class="idx">' + (i+1) + '</span>' +
-            '<input inputmode="decimal" value="' + s.dist + '" onchange="setVal(' + re.id + ',' + i + ',\'dist\',this.value)">' +
-            '<input inputmode="numeric" value="' + s.min + '" onchange="setVal(' + re.id + ',' + i + ',\'min\',this.value)">' +
-            '<input inputmode="numeric" placeholder="—" value="' + s.hr + '" onchange="setVal(' + re.id + ',' + i + ',\'hr\',this.value)">' +
+            '<input inputmode="decimal" value="' + s.dist + '" oninput="setVal(' + re.id + ',' + i + ',\'dist\',this.value)">' +
+            '<input inputmode="numeric" value="' + s.min + '" oninput="setVal(' + re.id + ',' + i + ',\'min\',this.value)">' +
+            '<input inputmode="numeric" placeholder="—" value="' + s.hr + '" oninput="setVal(' + re.id + ',' + i + ',\'hr\',this.value)">' +
             '<button class="tick" onclick="tick(' + re.id + ',' + i + ',' + re.exerciseId + ',' + re.rest + ')">' + IC_CHECK + '</button>' +
             '</div>').join('') +
           (last && last.sets[0] ? '<div class="lastrun">Minule ' + num(last.sets[0].dist||0) + ' km za ' + (last.sets[0].min||0) + ' min' +
@@ -1492,8 +1610,8 @@ function renderWorkout(r){
             '<div class="srow' + (s.done ? ' done' : '') + '" id="row-' + re.id + '-' + i + '">' +
             '<span class="idx">' + (i+1) + '</span>' +
             '<span class="last">' + (last && last.sets[i] ? num(last.sets[i].weight) + ' × ' + last.sets[i].reps : '—') + '</span>' +
-            '<input inputmode="decimal" value="' + s.weight + '" onchange="setVal(' + re.id + ',' + i + ',\'weight\',this.value)">' +
-            '<input inputmode="numeric" value="' + s.reps + '" onchange="setVal(' + re.id + ',' + i + ',\'reps\',this.value)">' +
+            '<input inputmode="decimal" value="' + s.weight + '" oninput="setVal(' + re.id + ',' + i + ',\'weight\',this.value)">' +
+            '<input inputmode="numeric" value="' + s.reps + '" oninput="setVal(' + re.id + ',' + i + ',\'reps\',this.value)">' +
             '<button class="tick" onclick="tick(' + re.id + ',' + i + ',' + re.exerciseId + ',' + re.rest + ')">' + IC_CHECK + '</button>' +
             '</div>').join('')) +
       '</div></div>';
@@ -1501,7 +1619,31 @@ function renderWorkout(r){
   '<div class="pad" style="padding-top:18px"><button class="btn" onclick="finishWorkout()">Dokončit trénink</button></div>';
 }
 
-function setVal(reId, i, field, v){ rows[reId][i][field] = v; }
+let draftT = null;
+
+/** Uloží rozepsanou hodnotu do session, i když série není odškrtnutá. */
+function syncSession(){
+  if (!session) return;
+  const idx = D.sessions.findIndex(x => x.id === session.id);
+  if (idx >= 0) D.sessions[idx] = session;
+  save();
+}
+
+function setVal(reId, i, field, v){
+  rows[reId][i][field] = v;
+  if (!session.draft) session.draft = {};
+  if (!session.draft[reId]) session.draft[reId] = [];
+  session.draft[reId][i] = Object.assign({}, rows[reId][i]);
+  // psaní po znaku, proto krátké zpoždění – ať se nezapisuje při každé klávese
+  clearTimeout(draftT);
+  draftT = setTimeout(syncSession, 400);
+}
+
+/** Okamžitý zápis, když se odchází z obrazovky nebo appka mizí na pozadí. */
+function flushDraft(){
+  clearTimeout(draftT);
+  syncSession();
+}
 
 function setNote(exerciseId, v){
   if (!session.notes) session.notes = {};
@@ -1564,7 +1706,7 @@ function quitWorkout(){
   closeWorkout();
 }
 function closeWorkout(){
-  if (session && !session.finished){ session.durationS = wSecs; save(); }
+  if (session && !session.finished){ session.durationS = wSecs; flushDraft(); }
   document.getElementById('workout').classList.remove('on');
   clearInterval(clockT); skipRest();
   renderCalendar();
@@ -1578,6 +1720,7 @@ function finishWorkout(){
   }
   session.finished = true;
   session.durationS = wSecs;
+  delete session.draft;
   const idx = D.sessions.findIndex(x => x.id === session.id);
   D.sessions[idx] = session;
   save();
@@ -1740,8 +1883,12 @@ function drawPreCard(g, r, date){
   g.fillText(dateLabel(date).toUpperCase(), 60, 110);
   g.letterSpacing = '0px';
 
-  g.fillStyle = '#fff'; g.font = '700 128px Oswald, sans-serif';
-  g.fillText(r.name.toUpperCase(), 58, 250);
+  g.fillStyle = '#fff';
+  const ptitle = r.name.toUpperCase();
+  let pfs = 120;
+  g.font = '700 ' + pfs + 'px Oswald, sans-serif';
+  while (pfs > 64 && g.measureText(ptitle).width > CW - 120){ pfs -= 4; g.font = '700 ' + pfs + 'px Oswald, sans-serif'; }
+  g.fillText(ptitle, 58, 135 + pfs * 1.0);
 
   g.fillStyle = 'rgba(255,255,255,.9)'; g.font = '400 30px "IBM Plex Mono", monospace';
   g.fillText(r.exercises.length + ' cviků · ' + r.exercises.reduce((a,e)=>a+e.sets,0) + ' sérií', 60, 320);
@@ -1772,16 +1919,22 @@ function drawPostCard(g, s){
   g.textAlign = 'left';
   g.fillStyle = r.color; g.font = '400 26px "IBM Plex Mono", monospace';
   g.letterSpacing = '5px';
-  g.fillText((dateLabel(fromKey(s.date)) + ' · odcvičeno').toUpperCase(), 60, 100);
+  g.fillText((dateLabel(fromKey(s.date)) + ' · odcvičeno').toUpperCase(), 60, 86);
   g.letterSpacing = '0px';
 
-  g.fillStyle = '#E9E7E1'; g.font = '700 110px Oswald, sans-serif';
-  g.fillText(r.name.toUpperCase(), 58, 210);
+  // Háčky a čárky nad velkými písmeny (Ě, Ž, Ý) v Oswaldu vyčnívají zhruba
+  // o čtvrtinu velikosti písma – proto mezera nad nadpisem a zmenšení u dlouhých názvů.
+  g.fillStyle = '#E9E7E1';
+  const title = r.name.toUpperCase();
+  let fs = 104;
+  g.font = '700 ' + fs + 'px Oswald, sans-serif';
+  while (fs > 60 && g.measureText(title).width > CW - 120){ fs -= 4; g.font = '700 ' + fs + 'px Oswald, sans-serif'; }
+  g.fillText(title, 58, 120 + fs * 1.02);
 
   if (hasMuscles){
     // dvě postavy vedle sebe, čelně a zezadu
     const k = 3.7, bw = 100 * k, gap = 60;
-    const ox = (CW - (bw*2 + gap)) / 2, oy = 255;
+    const ox = (CW - (bw*2 + gap)) / 2, oy = 280;
     drawBody(g, BODY_FRONT, ox, oy, k, worked, r.color);
     drawBody(g, BODY_BACK, ox + bw + gap, oy, k, worked, r.color);
 
@@ -2039,6 +2192,25 @@ if ('serviceWorker' in navigator){
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
 
+/* Výška aplikace.
+   iOS v režimu z plochy se zprůhledněnou stavovou lištou (black-translucent)
+   hlásí výšku okna o výšku stavové lišty menší, než je displej – pod tab barem
+   pak zůstane prázdný pás. V tom režimu proto bereme skutečnou výšku displeje. */
+function fitHeight(){
+  const standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+                     navigator.standalone === true;
+  const portrait = window.innerHeight >= window.innerWidth;
+  let h = window.innerHeight;
+  if (standalone && /iPhone|iPad|iPod/.test(navigator.userAgent || '')){
+    const screenH = portrait ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
+    if (screenH > h) h = screenH;
+  }
+  document.documentElement.style.setProperty('--app-h', h + 'px');
+}
+fitHeight();
+window.addEventListener('resize', fitHeight);
+window.addEventListener('orientationchange', () => setTimeout(fitHeight, 250));
+
 /* Požádáme prohlížeč, ať data nemaže při úklidu místa. Safari to dává
    nainstalovaným aplikacím, otevřeným v prohlížeči většinou ne. */
 let persisted = false;
@@ -2054,7 +2226,11 @@ let wakeLock = null;
 async function keepAwake(){
   try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
 }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') keepAwake();
+  else flushDraft();            // iOS může appku na pozadí kdykoliv ukončit
+});
+window.addEventListener('pagehide', flushDraft);
 keepAwake();
 </script>
 </body>
