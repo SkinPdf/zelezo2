@@ -591,7 +591,55 @@ function plannedFor(k){
   return D.weeklyPlan[dow] ? routineById(D.weeklyPlan[dow]) : null;
 }
 const sessionFor = k => D.sessions.find(s => s.date === k && s.finished);
-const openSessionFor = k => D.sessions.find(s => s.date === k && !s.finished);
+/** Rozpracovaný trénink dne — s rid jen ten dané rutiny (v jeden den jich může být víc). */
+const openSessionFor = (k, rid) => D.sessions.find(s => s.date === k && !s.finished && (rid == null || s.routineId === rid));
+
+/**
+ * Všechno naplánované na den: hlavní rutina (rozvrh / výjimka)
+ * + tréninky navíc z týdenního rozvrhu + tréninky navíc jen pro ten den.
+ */
+function dayPlanIds(k){
+  const ids = [];
+  const main = plannedFor(k);
+  if (main) ids.push(main.id);
+  const offDay = (k in D.overrides) && !D.overrides[k];         // výjimka „Volno“ ruší celý den
+  const skip = (D.daySkip && D.daySkip[k]) || [];
+  if (!offDay){
+    const dow = fromKey(k).getDay();
+    ((D.weeklyExtra && D.weeklyExtra[dow]) || []).forEach(id => { if (!skip.includes(id)) ids.push(id); });
+  }
+  ((D.dayExtra && D.dayExtra[k]) || []).forEach(id => ids.push(id));
+  return [...new Set(ids)].filter(id => routineById(id));
+}
+
+/** Rutina, ze které trénink vznikl — i u starých tréninků po znovunačtení rutin. */
+function sessionRoutine(s){
+  if (!s) return null;
+  const r = routineById(s.routineId);
+  if (r) return r;
+  const n = normName(sessionRoutineName(s));
+  return n ? D.routines.find(x => normName(x.name) === n) || null : null;
+}
+
+/**
+ * Položky dne pro kalendář: odcvičené a rozpracované tréninky + zbytek plánu.
+ * {r, done, open, planned, main}
+ */
+function dayItems(k){
+  const items = [], covered = new Set();
+  D.sessions.filter(s => s.date === k).sort((a,b) => a.id - b.id).forEach(s => {
+    const r = sessionRoutine(s) ||
+      {id:null, name: sessionRoutineName(s) || 'Trénink', color:'#5C636B', exercises:[]};
+    if (r.id) covered.add(r.id);
+    items.push({r, done: s.finished ? s : null, open: s.finished ? null : s});
+  });
+  const main = plannedFor(k);
+  dayPlanIds(k).forEach(id => {
+    if (covered.has(id)) return;
+    items.push({r: routineById(id), planned: true, main: !!main && main.id === id});
+  });
+  return items;
+}
 
 /**
  * Poznámka z minulého tréninku daného cviku.
@@ -619,7 +667,26 @@ function sessionRoutineName(s){
   const r = routineById(s.routineId);
   if (r) return r.name;
   const hit = (D.routineLog || []).find(x => x.routineId === s.routineId && x.routineName);
-  return hit ? hit.routineName : '';
+  if (hit) return hit.routineName;
+  const g = guessRoutine(s);
+  return g ? g.name : '';
+}
+
+/**
+ * Starý trénink, jehož rutina byla smazána a nikde nezůstal její název:
+ * přiřadíme ho k současné rutině s nejpodobnější sadou cviků.
+ */
+function guessRoutine(s){
+  const mine = new Set([...(s.order || []), ...(s.logs || []).map(l => l.exerciseId)]);
+  if (mine.size < 2) return null;
+  let best = null, bestScore = 0;
+  D.routines.forEach(r => {
+    const theirs = new Set(r.exercises.map(x => x.exerciseId));
+    let common = 0; mine.forEach(id => { if (theirs.has(id)) common++; });
+    const score = common / (mine.size + theirs.size - common);
+    if (common >= 2 && score > bestScore){ bestScore = score; best = r; }
+  });
+  return bestScore >= 0.3 ? best : null;
 }
 /** Každému tréninku uloží název rutiny, dokud ji ještě známe. Nic nemaže. */
 function backfillRoutineNames(){
@@ -629,7 +696,8 @@ function backfillRoutineNames(){
   });
   if (changed) save();
 }
-const normName = n => String(n || '').trim().toLowerCase();
+// „Push 2“ vzniklo dřívějším opakovaným importem — je to pořád Push.
+const normName = n => String(n || '').trim().toLowerCase().replace(/\s+\d+$/, '');
 
 /** Trénink patří ke stejné rutině jako ten právě otevřený (shoda id nebo názvu). */
 function sameRoutine(s, ref){
@@ -858,11 +926,8 @@ function renderCalendar(){
   for (let i = 0; i < offset; i++) g.insertAdjacentHTML('beforeend', '<div class="day empty"></div>');
   for (let d = 1; d <= len; d++){
     const dt = new Date(viewY, viewM, d), k = key(dt);
-    const done = sessionFor(k);
-    const r = done ? routineById(done.routineId) : plannedFor(k);
-    const dot = r
-      ? '<div class="dot ' + (done ? '' : 'plan') + '" style="' + (done ? 'background:' : 'color:') + r.color + '"></div>'
-      : '';
+    const dot = dayItems(k).slice(0, 3).map(it =>
+      '<div class="dot ' + (it.done ? '' : 'plan') + '" style="' + (it.done ? 'background:' : 'color:') + it.r.color + '"></div>').join('');
     const st = D.stretch && D.stretch[k] ? '<span class="stmark" aria-label="strečink">' + IC_STRETCH + '</span>' : '';
     const pc = photoMeta.some(p => p.date === k) ? '<span class="phmark" aria-label="fotka">' + IC_CAM_MINI + '</span>' : '';
     const marks = calMode === 'photo' ? pc : dot + st + pc;
@@ -917,10 +982,9 @@ function jumpToday(){ const t = today(); viewY = t.getFullYear(); viewM = t.getM
 function renderDayCard(){
   renderStretchRow();
   const k = key(sel), box = document.getElementById('daycard');
-  const done = sessionFor(k);
-  const r = done ? routineById(done.routineId) : plannedFor(k);
+  const items = dayItems(k);
 
-  if (!r){
+  if (!items.length){
     box.innerHTML = '<div class="card"><div class="stripe" style="background:var(--line)"></div>' +
       '<div class="eyebrow">' + dateLabel(sel) + '</div>' +
       '<h2 style="font-size:24px;margin-top:4px">Volno</h2>' +
@@ -929,6 +993,14 @@ function renderDayCard(){
     return;
   }
 
+  box.innerHTML = items.map(it => dayItemCard(k, it)).join('') +
+    '<button class="btn ghost" style="margin-top:2px" onclick="pickExtraFor(\'' + k + '\')">' +
+      '<svg class="icon" style="display:inline-block;width:16px;height:16px;vertical-align:-3px;margin-right:6px" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>' +
+      'Přidat další trénink</button>';
+}
+
+function dayItemCard(k, it){
+  const r = it.r, done = it.done;
   let body = '';
   if (done){
     const s = summarize(done);
@@ -942,9 +1014,8 @@ function renderDayCard(){
       '<div><div class="big">' + s.sets + '</div><div class="eyebrow" style="margin-top:4px">Série</div></div></div>' +
       '<button class="btn" style="margin-top:14px" onclick="openSessionDetail(' + done.id + ')">Zobrazit trénink</button>' +
       '<button class="btn ghost gap" onclick="shareCard(\'post\',' + done.id + ')">Sdílet výsledek</button>';
-  } else {
-    const open = openSessionFor(k);
-    const openSets = open ? open.logs.length : 0;
+  } else if (r.id){
+    const openSets = it.open ? it.open.logs.length : 0;
     body = r.exercises.map(re => {
       const e = exById(re.exerciseId);
       return '<div class="exline"><span>' + esc(e ? e.name : '?') + '</span><span class="data">' +
@@ -953,17 +1024,47 @@ function renderDayCard(){
     (openSets ? '<div class="hint" style="margin:14px 0 0">' + IC_UP +
       '<span>Rozpracovaný trénink · ' + openSets + ' sérií odškrtnuto</span></div>' : '') +
     '<button class="btn" style="margin-top:14px" onclick="startWorkout(' + r.id + ',\'' + k + '\')">' +
-      (openSets ? 'Pokračovat v tréninku' : 'Začít trénink') + '</button>' +
+      (it.open ? 'Pokračovat v tréninku' : 'Začít trénink') + '</button>' +
     '<button class="btn ghost gap" onclick="shareCard(\'pre\',' + r.id + ',\'' + k + '\')">Sdílet plán tréninku</button>' +
-    '<button class="btn ghost gap" onclick="pickRoutineFor(\'' + k + '\')">Změnit rutinu</button>';
+    (it.main
+      ? '<button class="btn ghost gap" onclick="pickRoutineFor(\'' + k + '\')">Změnit rutinu</button>'
+      : it.planned ? '<button class="btn ghost gap" onclick="removeFromDay(\'' + k + '\',' + r.id + ')">Odebrat z tohoto dne</button>' : '');
   }
 
-  box.innerHTML = '<div class="card"><div class="stripe" style="background:' + r.color + '"></div>' +
-    '<div class="eyebrow">' + dateLabel(sel) + ' · ' +
-      (done ? 'hotovo' : openSessionFor(k) ? 'rozpracováno' : 'plánováno') + '</div>' +
+  return '<div class="card"><div class="stripe" style="background:' + r.color + '"></div>' +
+    '<div class="eyebrow">' + dateLabel(fromKey(k)) + ' · ' +
+      (done ? 'hotovo' : it.open ? 'rozpracováno' : 'plánováno') + '</div>' +
     '<h2 style="font-size:24px;margin-top:4px">' + esc(r.name) + '</h2>' +
-    '<div class="muted">' + r.exercises.length + ' cviků · ' + r.exercises.reduce((a,e) => a+e.sets, 0) + ' sérií</div>' +
+    (r.exercises.length ? '<div class="muted">' + r.exercises.length + ' cviků · ' + r.exercises.reduce((a,e) => a+e.sets, 0) + ' sérií</div>' : '') +
     body + '</div>';
+}
+
+/** Další trénink navíc jen pro vybraný den. */
+function pickExtraFor(k){
+  const have = new Set(dayItems(k).map(it => it.r.id));
+  openModal('<h2 style="font-size:20px">Přidat trénink</h2><div class="muted" style="margin-top:4px">Navíc k tomu, co už v tento den máš.</div>' +
+    '<div style="margin-top:14px">' +
+    D.routines.filter(r => !have.has(r.id)).map(r => '<button class="row" style="border-radius:10px" onclick="addToDay(\'' + k + '\',' + r.id + ')">' +
+      '<span class="tag" style="background:' + r.color + '"></span><span class="n">' + esc(r.name) + '</span></button>').join('') +
+    '</div><button class="btn ghost" style="margin-top:14px" onclick="closeModal()">Zrušit</button>');
+}
+function addToDay(k, rid){
+  if (!D.dayExtra) D.dayExtra = {};
+  if (D.daySkip && D.daySkip[k]) D.daySkip[k] = D.daySkip[k].filter(x => x !== rid);
+  if (dayPlanIds(k).includes(rid)){ save(); closeModal(); renderCalendar(); return; }
+  if (!plannedFor(k)) D.overrides[k] = rid;                 // prázdný den → stane se hlavním
+  else (D.dayExtra[k] = D.dayExtra[k] || []).push(rid);
+  save(); closeModal(); renderCalendar();
+}
+function removeFromDay(k, rid){
+  if (D.dayExtra && D.dayExtra[k] && D.dayExtra[k].includes(rid)){
+    D.dayExtra[k] = D.dayExtra[k].filter(x => x !== rid);
+    if (!D.dayExtra[k].length) delete D.dayExtra[k];
+  } else {
+    if (!D.daySkip) D.daySkip = {};
+    (D.daySkip[k] = D.daySkip[k] || []).push(rid);          // trénink navíc z týdenního rozvrhu
+  }
+  save(); renderCalendar();
 }
 
 function renderWeekStats(){
@@ -996,10 +1097,12 @@ function renderRoutines(){
 
   document.getElementById('planlist').innerHTML = [1,2,3,4,5,6,0].map((dow,i) => {
     const r = D.weeklyPlan[dow] ? routineById(D.weeklyPlan[dow]) : null;
+    const ex = ((D.weeklyExtra && D.weeklyExtra[dow]) || []).map(routineById).filter(Boolean);
+    const all = (r ? [r] : []).concat(ex);
     return '<button class="planrow" onclick="pickPlan(' + dow + ')">' +
       '<span class="d">' + DOW_SHORT[i] + '</span>' +
-      '<span class="dot" style="background:' + (r ? r.color : 'transparent') + '"></span>' +
-      '<span style="flex:1;font-size:14px;color:' + (r ? 'var(--chalk)' : 'var(--dim)') + '">' + (r ? esc(r.name) : 'Volno') + '</span>' +
+      (all.length ? all.map(x => '<span class="dot" style="background:' + x.color + '"></span>').join('') : '<span class="dot" style="background:transparent"></span>') +
+      '<span style="flex:1;font-size:14px;color:' + (all.length ? 'var(--chalk)' : 'var(--dim)') + '">' + (all.length ? all.map(x => esc(x.name)).join(' + ') : 'Volno') + '</span>' +
       '<svg class="icon" style="width:16px;height:16px;color:var(--dim)" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>';
   }).join('');
 
@@ -1016,16 +1119,40 @@ function newRoutine(){
 }
 
 function pickPlan(dow){
+  const main = D.weeklyPlan[dow];
+  const extra = (D.weeklyExtra && D.weeklyExtra[dow]) || [];
+  const tick = on => '<span style="width:22px;height:22px;border-radius:6px;flex:none;display:grid;place-items:center;' +
+    (on ? 'background:var(--chalk);color:#121417' : 'box-shadow:inset 0 0 0 1.5px var(--dim)') + '">' +
+    (on ? '<svg viewBox="0 0 12 12" style="width:13px;height:13px"><path d="M2.5 6.2l2.3 2.3 4.7-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '') + '</span>';
   openModal('<h2 style="font-size:20px">' + DOW_SHORT[[1,2,3,4,5,6,0].indexOf(dow)] + ' — co se cvičí</h2>' +
-    '<div style="margin-top:14px">' +
+    '<div class="eyebrow" style="margin-top:14px">Hlavní trénink</div>' +
+    '<div style="margin-top:6px">' +
     D.routines.map(r => '<button class="row" style="border-radius:10px" onclick="setPlan(' + dow + ',' + r.id + ')">' +
-      '<span class="tag" style="background:' + r.color + '"></span><span class="n">' + esc(r.name) + '</span></button>').join('') +
-    '</div><button class="btn ghost" style="margin-top:14px" onclick="setPlan(' + dow + ',null)">Volno</button>' +
-    '<button class="btn ghost gap" onclick="closeModal()">Zrušit</button>');
+      '<span class="tag" style="background:' + r.color + '"></span><span class="n">' + esc(r.name) + '</span>' + (r.id === main ? tick(true) : '') + '</button>').join('') +
+    '</div>' +
+    (main ? '<div class="eyebrow" style="margin-top:18px">Navíc ve stejný den</div>' +
+      '<div style="margin-top:6px">' +
+      D.routines.filter(r => r.id !== main).map(r => '<button class="row" style="border-radius:10px" onclick="toggleWeeklyExtra(' + dow + ',' + r.id + ')">' +
+        '<span class="tag" style="background:' + r.color + '"></span><span class="n">' + esc(r.name) + '</span>' + tick(extra.includes(r.id)) + '</button>').join('') +
+      '</div>' : '') +
+    '<button class="btn ghost" style="margin-top:14px" onclick="setPlan(' + dow + ',null)">Volno</button>' +
+    '<button class="btn ghost gap" onclick="closeModal()">Hotovo</button>');
+}
+function toggleWeeklyExtra(dow, rid){
+  if (!D.weeklyExtra) D.weeklyExtra = {};
+  const l = D.weeklyExtra[dow] || [];
+  D.weeklyExtra[dow] = l.includes(rid) ? l.filter(x => x !== rid) : l.concat([rid]);
+  if (!D.weeklyExtra[dow].length) delete D.weeklyExtra[dow];
+  save(); renderRoutines(); pickPlan(dow);
 }
 function setPlan(dow, rid){
-  if (rid) D.weeklyPlan[dow] = rid; else delete D.weeklyPlan[dow];
-  save(); closeModal(); renderRoutines();
+  if (rid) D.weeklyPlan[dow] = rid; else { delete D.weeklyPlan[dow]; if (D.weeklyExtra) delete D.weeklyExtra[dow]; }
+  if (rid && D.weeklyExtra && D.weeklyExtra[dow]){
+    D.weeklyExtra[dow] = D.weeklyExtra[dow].filter(x => x !== rid);
+    if (!D.weeklyExtra[dow].length) delete D.weeklyExtra[dow];
+  }
+  save(); renderRoutines();
+  if (rid) pickPlan(dow); else closeModal();                // zůstaň v okně, ať jde přidat trénink navíc
 }
 
 function pickRoutineFor(k){
@@ -1037,7 +1164,11 @@ function pickRoutineFor(k){
     '<button class="btn ghost gap" onclick="clearOverride(\'' + k + '\')">Zpět podle rozvrhu</button>' +
     '<button class="btn ghost gap" onclick="closeModal()">Zrušit</button>');
 }
-function setOverride(k, rid){ D.overrides[k] = rid; save(); closeModal(); renderCalendar(); }
+function setOverride(k, rid){
+  D.overrides[k] = rid;
+  if (!rid && D.dayExtra) delete D.dayExtra[k];
+  save(); closeModal(); renderCalendar();
+}
 function clearOverride(k){ delete D.overrides[k]; save(); closeModal(); renderCalendar(); }
 
 /* ---------- detail odcvičeného tréninku ---------- */
@@ -1053,7 +1184,7 @@ function openSessionDetail(id){
 function renderSessionDetail(){
   const s = D.sessions.find(x => x.id === detailId);
   if (!s) return closePush();
-  const r = routineById(s.routineId), sum = summarize(s);
+  const r = sessionRoutine(s), sum = summarize(s);
   const color = r ? r.color : 'var(--line)';
 
   // série seskupené po cvicích, v pořadí podle rutiny
@@ -1121,9 +1252,11 @@ function renderSessionDetail(){
 function reopenSession(id){
   const s = D.sessions.find(x => x.id === id);
   if (!s || !confirm('Otevřít trénink k úpravě?\nDokud ho znovu nedokončíš, bude se počítat jako rozpracovaný.')) return;
-  s.finished = false; save();
+  const r = sessionRoutine(s);
+  if (!r){ toast('Rutina tohoto tréninku už neexistuje'); return; }
+  s.routineId = r.id; s.finished = false; save();
   closePush();
-  startWorkout(s.routineId, s.date);
+  startWorkout(r.id, s.date);
 }
 
 function deleteSession(id){
@@ -1277,6 +1410,7 @@ function deleteRoutine(){
   backfillRoutineNames();
   D.routines = D.routines.filter(x => x.id !== editId);
   Object.keys(D.weeklyPlan).forEach(k => { if (D.weeklyPlan[k] === editId) delete D.weeklyPlan[k]; });
+  dropRoutineRefs(editId, null);
   save(); closePush(); renderRoutines();
 }
 function closePush(){ document.getElementById('push').classList.remove('on'); renderRoutines(); renderCalendar(); }
@@ -1555,7 +1689,7 @@ function historySection(){
     .sort((a,b) => a.date < b.date ? 1 : (a.date > b.date ? -1 : b.id - a.id)).slice(0, 10);
   if (!list.length) return '';
   return '<div class="sec">Historie</div>' + list.map(s => {
-    const r = routineById(s.routineId), sum = summarize(s);
+    const r = sessionRoutine(s), sum = summarize(s);
     return '<button class="card" onclick="openSessionDetail(' + s.id + ')">' +
       '<div class="stripe" style="background:' + (r ? r.color : 'var(--line)') + '"></div>' +
       '<div style="display:flex;align-items:center;gap:10px">' +
@@ -1594,7 +1728,7 @@ let session = null, rows = {}, clockT = null, restT = null, restLeft = 0, restTo
 
 function startWorkout(routineId, dateKey){
   const r = routineById(routineId);
-  session = openSessionFor(dateKey);
+  session = openSessionFor(dateKey, routineId);
   if (!session){
     session = {id:uid(), date:dateKey, routineId, routineName:r.name, durationS:0, finished:false, logs:[], notes:{}, draft:{},
       order: r.exercises.map(x => x.exerciseId)};
@@ -1998,7 +2132,7 @@ function drawPreCard(g, r, date){
 
 /** Karta po tréninku — chlouba do skupiny. */
 function drawPostCard(g, s){
-  const r = routineById(s.routineId), sum = summarize(s);
+  const r = sessionRoutine(s), sum = summarize(s);
   const worked = sessionMuscles(s);
   const hasMuscles = Object.keys(worked).length > 0;
   cardBase(g);
@@ -2233,29 +2367,69 @@ function mergePack(pack){
     D.exercises.push(e); byName[e.name.toLowerCase()] = e; newEx++;
   });
 
+  // Než cokoli změníme, uložíme každému tréninku název jeho rutiny.
+  backfillRoutineNames();
+
   const made = {};
+  let updRt = 0, folded = 0;
   (pack.routines || []).forEach(pr => {
-    let name = pr.name, n = 2;
-    while (D.routines.some(r => r.name.toLowerCase() === name.toLowerCase())) name = pr.name + ' ' + n++;
-    const r = {id:uid(), name, color:pr.color || ROUTINE_COLORS[D.routines.length % ROUTINE_COLORS.length], exercises:[]};
+    const exs = [];
     (pr.exercises || []).forEach(x => {
       const e = byName[x.name.toLowerCase()];
       if (!e) return;
-      r.exercises.push({id:uid(), exerciseId:e.id, sets:x.sets, repLow:x.repLow, repHigh:x.repHigh, rest:x.rest});
+      exs.push({id:uid(), exerciseId:e.id, sets:x.sets, repLow:x.repLow, repHigh:x.repHigh, rest:x.rest});
     });
+
+    // Rutina se stejným názvem (i „Push 2“ z dřívějších importů) se
+    // aktualizuje na místě — zůstane jí id, a tím i historie a rozvrh.
+    const same = D.routines.filter(r => normName(r.name) === normName(pr.name));
+    if (same.length){
+      const keep = same.find(r => r.name.toLowerCase() === pr.name.toLowerCase()) || same[0];
+      same.filter(r => r !== keep).forEach(dup => { foldRoutine(dup.id, keep.id); folded++; });
+      keep.name = pr.name;
+      keep.exercises = exs;
+      logRoutine(keep, {text: 'Aktualizováno z balíčku rutin'});
+      made[pr.name] = keep.id; updRt++;
+      return;
+    }
+    const r = {id:uid(), name:pr.name, color:pr.color || ROUTINE_COLORS[D.routines.length % ROUTINE_COLORS.length], exercises:exs};
     D.routines.push(r); made[pr.name] = r.id; newRt++;
   });
 
   if (pack.weeklyPlan && confirm('Nastavit i týdenní rozvrh podle balíčku?\nStávající rozvrh se přepíše.')){
-    D.weeklyPlan = {};
+    D.weeklyPlan = {}; D.weeklyExtra = {};
     Object.keys(pack.weeklyPlan).forEach(dow => {
-      const id = made[pack.weeklyPlan[dow]];
-      if (id) D.weeklyPlan[dow] = id;
+      // hodnota je název rutiny, nebo pole názvů (víc tréninků v jeden den)
+      const ids = [].concat(pack.weeklyPlan[dow]).map(n => made[n]).filter(Boolean);
+      if (ids[0]) D.weeklyPlan[dow] = ids[0];
+      if (ids.length > 1) D.weeklyExtra[dow] = ids.slice(1);
     });
   }
 
   save(); closeModal(); jumpToday(); go('rut');
-  toast('Přidáno: ' + newRt + ' rutin, ' + newEx + ' cviků' + (renamed ? ', přejmenováno ' + renamed : ''));
+  toast('Rutiny: ' + updRt + ' aktualizováno, ' + newRt + ' nových' + (folded ? ', ' + folded + ' duplicit sloučeno' : '') +
+        ' · cviky: ' + newEx + ' nových' + (renamed ? ', ' + renamed + ' přejmenováno' : ''));
+}
+
+/** Přepojí (toId) nebo odebere (null) rutinu ze seznamů tréninků navíc. */
+function dropRoutineRefs(fromId, toId){
+  ['weeklyExtra','dayExtra','daySkip'].forEach(f => {
+    const m = D[f]; if (!m) return;
+    Object.keys(m).forEach(k => {
+      m[k] = [...new Set(m[k].map(x => x === fromId ? toId : x).filter(x => x != null))];
+      if (!m[k].length) delete m[k];
+    });
+  });
+}
+
+/** Duplicitní rutinu sloučí do hlavní: tréninky, rozvrh i výjimky se přepojí. */
+function foldRoutine(fromId, toId){
+  const to = routineById(toId);
+  D.sessions.forEach(s => { if (s.routineId === fromId){ s.routineId = toId; s.routineName = to.name; } });
+  Object.keys(D.weeklyPlan).forEach(k => { if (D.weeklyPlan[k] === fromId) D.weeklyPlan[k] = toId; });
+  Object.keys(D.overrides).forEach(k => { if (D.overrides[k] === fromId) D.overrides[k] = toId; });
+  dropRoutineRefs(fromId, toId);
+  D.routines = D.routines.filter(r => r.id !== fromId);
 }
 function resetAll(){
   if (!confirm('Opravdu smazat všechno?\nRutiny, cviky i celou historii tréninků.')) return;
@@ -2417,7 +2591,7 @@ async function openPhoto(id){
   let rec = null;
   try { rec = await idbReq('blobs', 'readonly', st => st.get(id)); } catch(e){}
   const s = p.sessionId ? D.sessions.find(x => x.id === p.sessionId) : null;
-  const r = s ? routineById(s.routineId) : null;
+  const r = s ? sessionRoutine(s) : null;
   const t = new Date(p.ts);
   const mb = rec && rec.full ? (rec.full.size / 1048576).toFixed(1).replace('.', ',') + ' MB' : '';
   openModal('<img class="pview" id="pviewimg" src="' + url + '" alt="" onload="showRes()">' +
