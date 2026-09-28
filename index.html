@@ -544,6 +544,7 @@ function initDB(){
   if (D && D.exercises){
     // Existující data se NIKDY nezahazují — jen se doplní chybějící pole.
     if (!D.version || D.version < DB_VERSION) migrate();
+    backfillRoutineNames();
     return;
   }
   D = {version:DB_VERSION, seq:0, exercises:[], routines:[], weeklyPlan:{}, overrides:{}, sessions:[]};
@@ -557,7 +558,9 @@ function initDB(){
 /** Doplní pole, která v starších datech chyběla. Nic nemaže. */
 function migrate(){
   D.sessions = D.sessions || [];
-  D.sessions.forEach(s => { if (!s.notes) s.notes = {}; });
+  D.sessions.forEach(s => {
+    if (!s.notes) s.notes = {};
+  });
   D.exercises = D.exercises || [];
   D.exercises.forEach(e => { if (e.desc === undefined) e.desc = ''; });
   D.overrides = D.overrides || {};
@@ -596,19 +599,52 @@ const openSessionFor = k => D.sessions.find(s => s.date === k && !s.finished);
  * poznámka tak žije přesně jeden trénink a pak zmizí.
  */
 function lastNote(exerciseId, exceptId){
+  const cur = D.sessions.find(s => s.id === exceptId);
   const prev = D.sessions
-    .filter(s => s.finished && s.id !== exceptId &&
+    .filter(s => s.finished && s.id !== exceptId && sameRoutine(s, cur) &&
       ((s.notes && s.notes[exerciseId]) || s.logs.some(l => l.exerciseId === exerciseId)))
     .sort((a,b) => a.date < b.date ? 1 : (a.date > b.date ? -1 : b.id - a.id))[0];
   if (!prev || !prev.notes) return null;
   return prev.notes[exerciseId] || null;
 }
 
-/** Poslední odcvičené série cviku – zdroj šedých hodnot „minule". */
+/**
+ * Název rutiny, ze které trénink vznikl. Ukládá se přímo do tréninku,
+ * protože po znovunačtení doporučených rutin dostanou rutiny nová id.
+ * U starých tréninků ho dohledáme v rutinách nebo v auditním logu.
+ */
+function sessionRoutineName(s){
+  if (!s) return '';
+  if (s.routineName) return s.routineName;
+  const r = routineById(s.routineId);
+  if (r) return r.name;
+  const hit = (D.routineLog || []).find(x => x.routineId === s.routineId && x.routineName);
+  return hit ? hit.routineName : '';
+}
+/** Každému tréninku uloží název rutiny, dokud ji ještě známe. Nic nemaže. */
+function backfillRoutineNames(){
+  let changed = false;
+  (D.sessions || []).forEach(s => {
+    if (!s.routineName){ const n = sessionRoutineName(s); if (n){ s.routineName = n; changed = true; } }
+  });
+  if (changed) save();
+}
+const normName = n => String(n || '').trim().toLowerCase();
+
+/** Trénink patří ke stejné rutině jako ten právě otevřený (shoda id nebo názvu). */
+function sameRoutine(s, ref){
+  if (!ref) return true;
+  if (s.routineId === ref.routineId) return true;
+  const a = normName(sessionRoutineName(s)), b = normName(sessionRoutineName(ref));
+  return !!a && a === b;
+}
+
+/** Poslední odcvičené série cviku ve STEJNÉ rutině – zdroj šedých hodnot „minule". */
 function lastPerformance(exerciseId, exceptId){
+  const cur = D.sessions.find(s => s.id === exceptId);
   const done = D.sessions
-    .filter(s => s.finished && s.id !== exceptId && s.logs.some(l => l.exerciseId === exerciseId))
-    .sort((a,b) => a.date < b.date ? 1 : -1);
+    .filter(s => s.finished && s.id !== exceptId && sameRoutine(s, cur) && s.logs.some(l => l.exerciseId === exerciseId))
+    .sort((a,b) => a.date < b.date ? 1 : (a.date > b.date ? -1 : b.id - a.id));
   if (!done.length) return null;
   const s = done[0];
   const sets = s.logs.filter(l => l.exerciseId === exerciseId).sort((a,b) => a.setIndex - b.setIndex);
@@ -1238,6 +1274,7 @@ function delRoutineEx(reId){
 function deleteRoutine(){
   const r = routineById(editId);
   if (!confirm('Smazat rutinu „' + r.name + '"?\nOdcvičené tréninky zůstanou zachované.')) return;
+  backfillRoutineNames();
   D.routines = D.routines.filter(x => x.id !== editId);
   Object.keys(D.weeklyPlan).forEach(k => { if (D.weeklyPlan[k] === editId) delete D.weeklyPlan[k]; });
   save(); closePush(); renderRoutines();
@@ -1559,7 +1596,7 @@ function startWorkout(routineId, dateKey){
   const r = routineById(routineId);
   session = openSessionFor(dateKey);
   if (!session){
-    session = {id:uid(), date:dateKey, routineId, durationS:0, finished:false, logs:[], notes:{}, draft:{},
+    session = {id:uid(), date:dateKey, routineId, routineName:r.name, durationS:0, finished:false, logs:[], notes:{}, draft:{},
       order: r.exercises.map(x => x.exerciseId)};
     D.sessions.push(session); save();
   }
